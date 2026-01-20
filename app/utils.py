@@ -6,6 +6,8 @@ import base64
 from PIL import Image
 
 import requests
+import geoip2.database
+from flask import current_app
 
 import os
 from urllib.parse import urlparse
@@ -26,14 +28,18 @@ def is_safe_url(target_url):
     return True
 
 def get_geo_info(ip):
-    """Fetches country from IP using a free API."""
-    if ip == '127.0.0.1':
-        return "Localhost"
+    """Fetches country from IP using local MaxMind database."""
+    if ip == '127.0.0.1' or ip.startswith('192.168.') or ip.startswith('10.'):
+        return "Local Network"
+    
+    db_path = current_app.config.get('GEOIP_DB_PATH')
+    if not db_path or not os.path.exists(db_path):
+        return "Unknown (DB Missing)"
+
     try:
-        response = requests.get(f"http://ip-api.com/json/{ip}", timeout=2)
-        if response.status_code == 200:
-            data = response.json()
-            return data.get('country', 'Unknown')
+        with geoip2.database.Reader(db_path) as reader:
+            response = reader.country(ip)
+            return response.country.name or "Unknown"
     except Exception: # nosec B110
         pass
     return "Unknown"

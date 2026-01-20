@@ -1,15 +1,16 @@
 services:
-  web:
-    build: .
+  app:
+    image: ghcr.io/arumes31/redirx:latest
     ports:
       - "5000:5000"
     environment:
-      - SECRET_KEY=dev-secret-key-change-in-prod
-      - DATABASE_URL=postgresql://redirx:securepassword@db:5432/redirx_db
-      - BASE_DOMAIN=localhost:5000
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - BASE_DOMAIN=${BASE_DOMAIN}
       - GEOIP_DB_PATH=/usr/share/GeoIP/GeoLite2-Country.mmdb
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - geoip_data:/usr/share/GeoIP
     restart: always
@@ -17,11 +18,16 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_USER=redirx
-      - POSTGRES_PASSWORD=securepassword
-      - POSTGRES_DB=redirx_db
+      - POSTGRES_USER=${POSTGRES_USER:-redirx}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-securepassword}
+      - POSTGRES_DB=${POSTGRES_DB:-redirx_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-redirx} -d ${POSTGRES_DB:-redirx_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: always
 
   geoip-updater:
