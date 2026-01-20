@@ -67,6 +67,8 @@ def index():
             long_url=long_url,
             ab_urls=ab_list,
             password_hash=password_hash,
+            fb_pixel_id=form.fb_pixel_id.data,
+            ga_tracking_id=form.ga_tracking_id.data,
             start_at=start_at,
             end_at=end_at,
             expires_at=expires_at
@@ -194,6 +196,13 @@ def redirect_to_url(short_code):
     db.session.add(new_click)
     db.session.commit()
     
+    # If pixels are present, use intermediate page
+    if url_entry.fb_pixel_id or url_entry.ga_tracking_id:
+        return render_template('redirect.html', 
+                               target_url=target_url, 
+                               fb_id=url_entry.fb_pixel_id, 
+                               ga_id=url_entry.ga_tracking_id)
+
     return redirect(target_url, code=302)
 
 @main.route('/link-auth/<short_code>', methods=['GET', 'POST'])

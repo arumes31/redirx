@@ -31,6 +31,9 @@ def shorten():
     disable_expiry = data.get('disable_expiry', False)
     expiry_hours = data.get('expiry_hours', current_app.config['EXPIRY_HOURS'])
     
+    fb_pixel_id = data.get('fb_pixel_id')
+    ga_tracking_id = data.get('ga_tracking_id')
+    
     start_at_str = data.get('start_at')
     end_at_str = data.get('end_at')
 
@@ -79,6 +82,8 @@ def shorten():
         long_url=long_url,
         ab_urls=ab_urls,
         password_hash=password_hash,
+        fb_pixel_id=fb_pixel_id,
+        ga_tracking_id=ga_tracking_id,
         expires_at=expires_at,
         start_at=start_at,
         end_at=end_at

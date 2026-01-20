@@ -26,6 +26,8 @@ class URL(db.Model):
     long_url = db.Column(db.Text, nullable=False)
     _ab_urls = db.Column('ab_urls', db.Text, nullable=True) # Stored as JSON string
     password_hash = db.Column(db.String(255), nullable=True)
+    fb_pixel_id = db.Column(db.String(50), nullable=True)
+    ga_tracking_id = db.Column(db.String(50), nullable=True)
     clicks_count = db.Column('clicks', db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     expires_at = db.Column(db.DateTime, nullable=True)

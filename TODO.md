@@ -13,8 +13,8 @@
 - [x] **API Keys:** Issue unique keys for authenticated API usage and rate limiting.
 
 ## 3. Marketing Tools 🚀
-- [ ] **UTM Builder:** Helper tool to append UTM parameters to URLs.
-- [ ] **Retargeting Pixels:** Support for Facebook Pixel and Google Analytics IDs.
+- [x] **UTM Builder:** Helper tool to append UTM parameters to URLs.
+- [x] **Retargeting Pixels:** Support for Facebook Pixel and Google Analytics IDs.
 
 ## 4. Security & Safety 🛡️
 - [ ] **Phishing Protection:** Integration with Google Safe Browsing API.

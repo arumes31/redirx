@@ -9,6 +9,10 @@ class ShortenURLForm(FlaskForm):
     ab_urls = StringField('Alternate URLs', validators=[Optional()], description="Comma-separated URLs")
     password = PasswordField('Password', validators=[Optional()])
     
+    # Tracking Pixels
+    fb_pixel_id = StringField('Facebook Pixel ID', validators=[Optional()])
+    ga_tracking_id = StringField('Google Analytics ID', validators=[Optional()])
+    
     # Expiry
     expiry_hours = IntegerField('Expiry (Hours)', default=24, validators=[Optional()])
     disable_expiry = BooleanField('Disable Expiry')
