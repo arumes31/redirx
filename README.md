@@ -92,12 +92,6 @@ The fastest way to get started is using Docker Compose:
 }
 ```
 
-## 🧪 Running Tests
-
-```bash
-python -m pytest
-```
-
 ## 🛡 Security
 
 - Daily security scans via Bandit.
