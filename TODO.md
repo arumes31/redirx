@@ -1,10 +1,10 @@
 # Redirx Future Roadmap 🚀
 
 ## 1. Advanced Analytics 📊
-- [ ] **Geo-Location:** Track visitor country/city via IP address.
-- [ ] **Device & OS Tracking:** Identify Mobile, Desktop, iOS, Android, etc.
-- [ ] **Referrer Tracking:** Show traffic sources (e.g., Twitter, Facebook, Direct).
-- [ ] **Time-Series Graphs:** Display click trends over 24h, 7 days, and 30 days.
+- [x] **Geo-Location:** Track visitor country/city via IP address.
+- [x] **Device & OS Tracking:** Identify Mobile, Desktop, iOS, Android, etc.
+- [x] **Referrer Tracking:** Show traffic sources (e.g., Twitter, Facebook, Direct).
+- [x] **Time-Series Graphs:** Display click trends over 24h, 7 days, and 30 days.
 
 ## 2. User Accounts & Management 👤
 - [x] **User Authentication:** Registration and Login system.

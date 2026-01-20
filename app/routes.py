@@ -7,9 +7,9 @@ from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from PIL import Image
 
-from app.models import db, URL, User
+from app.models import db, URL, User, Click
 from app.forms import ShortenURLForm, BulkUploadForm, LoginForm, RegisterForm, LinkPasswordForm
-from app.utils import generate_short_code, get_qr_data_url, generate_qr, select_ab_url
+from app.utils import generate_short_code, get_qr_data_url, generate_qr, select_ab_url, get_geo_info
 
 main = Blueprint('main', __name__)
 
@@ -178,7 +178,19 @@ def redirect_to_url(short_code):
             target_url = alt
             
     # Stats
-    url_entry.clicks += 1
+    url_entry.clicks_count += 1
+    
+    # Record detailed click
+    user_agent = request.user_agent
+    new_click = Click(
+        url_id=url_entry.id,
+        ip_address=request.remote_addr,
+        country=get_geo_info(request.remote_addr),
+        browser=user_agent.browser,
+        platform=user_agent.platform,
+        referrer=request.referrer or "Direct"
+    )
+    db.session.add(new_click)
     db.session.commit()
     
     return redirect(target_url, code=302)
@@ -242,13 +254,43 @@ def stats(short_code):
     url_entry = URL.query.filter_by(short_code=short_code).first_or_404()
     
     if not url_entry.is_active():
-        abort(410) # Or show stats for expired links? Let's show stats usually.
-        # But original logic aborted 410. Let's allow stats for expired links but show status.
+        # We allow viewing stats for expired links but warn
+        pass
     
     short_url = f"https://{current_app.config['BASE_DOMAIN']}/{short_code}"
     
+    # Process Analytics
+    clicks = Click.query.filter_by(url_id=url_entry.id).order_by(Click.timestamp.asc()).all()
+    
+    # 1. Clicks over time (last 7 days by default)
+    time_data = {}
+    for click in clicks:
+        day = click.timestamp.strftime('%Y-%m-%d')
+        time_data[day] = time_data.get(day, 0) + 1
+    
+    # 2. Countries
+    country_data = {}
+    for click in clicks:
+        country_data[click.country] = country_data.get(click.country, 0) + 1
+    
+    # 3. Browsers
+    browser_data = {}
+    for click in clicks:
+        name = click.browser or "Unknown"
+        browser_data[name] = browser_data.get(name, 0) + 1
+
+    # 4. Platforms
+    platform_data = {}
+    for click in clicks:
+        name = click.platform or "Unknown"
+        platform_data[name] = platform_data.get(name, 0) + 1
+        
     return render_template('stats.html', url=url_entry, short_url=short_url, 
-                           active=url_entry.is_active())
+                           active=url_entry.is_active(),
+                           time_data=time_data,
+                           country_data=country_data,
+                           browser_data=browser_data,
+                           platform_data=platform_data)
 
 @main.route('/<short_code>/qr')
 def qr_download(short_code):

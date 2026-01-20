@@ -28,7 +28,7 @@
                             <tr>
                                 <td><span class="fw-bold text-info">{{ url.short_code }}</span></td>
                                 <td class="text-truncate" style="max-width: 250px;">{{ url.long_url }}</td>
-                                <td>{{ url.clicks }}</td>
+                                <td>{{ url.clicks_count }}</td>
                                 <td>{{ url.created_at.strftime('%Y-%m-%d') }}</td>
                                 <td>
                                     {% if url.is_active() %}

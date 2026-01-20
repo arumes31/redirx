@@ -24,11 +24,14 @@ class URL(db.Model):
     long_url = db.Column(db.Text, nullable=False)
     _ab_urls = db.Column('ab_urls', db.Text, nullable=True) # Stored as JSON string
     password_hash = db.Column(db.String(255), nullable=True)
-    clicks = db.Column(db.Integer, default=0)
+    clicks_count = db.Column('clicks', db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     expires_at = db.Column(db.DateTime, nullable=True)
     start_at = db.Column(db.DateTime, nullable=True)
     end_at = db.Column(db.DateTime, nullable=True)
+
+    # Relationship to detailed clicks
+    clicks = db.relationship('Click', backref='url', lazy=True, cascade="all, delete-orphan")
 
     @property
     def ab_urls(self):
@@ -44,15 +47,6 @@ class URL(db.Model):
             self._ab_urls = None
 
     def is_active(self):
-        now = datetime.now(timezone.utc).replace(tzinfo=None) # Compare naive to naive if db stores naive
-        # SQLAlchemy defaults often store naive UTC. Let's ensure consistency.
-        # If created_at is naive UTC from previous lambda, we should be careful.
-        # However, typically SQLite stores strings.
-        # Let's check if the fields are timezone aware or not.
-        # By default SQLAlchemy DateTime is naive.
-        # So we should use naive UTC for comparison if the DB is naive.
-        
-        # Let's stick to the pattern but make it naive for compatibility with default DateTime
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         
         if self.start_at and now < self.start_at:
@@ -62,3 +56,14 @@ class URL(db.Model):
         if self.expires_at and now > self.expires_at:
             return False
         return True
+
+class Click(db.Model):
+    __tablename__ = 'clicks'
+    id = db.Column(db.Integer, primary_key=True)
+    url_id = db.Column(db.Integer, db.ForeignKey('urls.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    ip_address = db.Column(db.String(45))
+    country = db.Column(db.String(100), default="Unknown")
+    browser = db.Column(db.String(50))
+    platform = db.Column(db.String(50))
+    referrer = db.Column(db.String(255), default="Direct")

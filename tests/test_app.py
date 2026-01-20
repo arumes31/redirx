@@ -49,6 +49,10 @@ def test_redirect(client):
     response = client.get('/REDIR')
     assert response.status_code == 302
     assert response.location == 'https://example.com'
+    
+    with client.application.app_context():
+        link = URL.query.filter_by(short_code='REDIR').first()
+        assert link.clicks_count == 1
 
 def test_expiry(client):
     # Create expired link

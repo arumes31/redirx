@@ -5,6 +5,21 @@ import datetime
 import base64
 from PIL import Image
 
+import requests
+
+def get_geo_info(ip):
+    """Fetches country from IP using a free API."""
+    if ip == '127.0.0.1':
+        return "Localhost"
+    try:
+        response = requests.get(f"http://ip-api.com/json/{ip}", timeout=2)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get('country', 'Unknown')
+    except Exception:
+        pass
+    return "Unknown"
+
 def generate_short_code(length=6):
     """Generates a random short code."""
     return str(uuid.uuid4())[:length].upper()
