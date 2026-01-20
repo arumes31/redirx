@@ -9,6 +9,18 @@
             <a href="{{ url_for('main.index') }}" class="btn btn-shorten">Shorten New Link</a>
         </div>
         
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title text-info"><i class="fas fa-key me-2"></i> API Access</h5>
+                <p class="card-text text-muted mb-2">Use this key in the <code>X-API-KEY</code> header to create links via the API.</p>
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-secondary text-light">Key</span>
+                    <input type="text" class="form-control bg-transparent border-secondary text-light font-monospace" value="{{ current_user.api_key }}" readonly onclick="this.select()">
+                    <button class="btn btn-outline-light" onclick="navigator.clipboard.writeText('{{ current_user.api_key }}'); this.innerText='Copied!'">Copy</button>
+                </div>
+            </div>
+        </div>
+        
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -38,6 +50,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
+                                    <a href="{{ url_for('main.edit_url', short_code=url.short_code) }}" class="btn btn-sm btn-outline-warning">Edit</a>
                                     <a href="{{ url_for('main.stats', short_code=url.short_code) }}" class="btn btn-sm btn-outline-info">Stats</a>
                                     <a href="{{ url_for('main.qr_download', short_code=url.short_code) }}" class="btn btn-sm btn-outline-light">QR</a>
                                 </td>

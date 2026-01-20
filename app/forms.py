@@ -44,3 +44,8 @@ class RegisterForm(FlaskForm):
 class LinkPasswordForm(FlaskForm): # Renamed from original LoginForm to avoid confusion
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Unlock')
+
+class EditURLForm(FlaskForm):
+    long_url = StringField('Destination URL', validators=[DataRequired(), URL()])
+    active = BooleanField('Active')
+    submit = SubmitField('Update Link')

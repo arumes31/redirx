@@ -1,14 +1,23 @@
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash
-from app.models import db, URL
+from app.models import db, URL, User
 from app.utils import generate_short_code, generate_qr
 import datetime
 import base64
 
 api = Blueprint('api', __name__, url_prefix='/api/v1')
 
+def get_user_from_api_key():
+    api_key = request.headers.get('X-API-KEY')
+    if not api_key:
+        return None
+    return User.query.filter_by(api_key=api_key).first()
+
 @api.route('/shorten', methods=['POST'])
 def shorten():
+    # Authenticate User
+    user = get_user_from_api_key()
+    
     data = request.get_json()
     if not data or 'long_url' not in data:
         return jsonify({'error': 'Missing long_url'}), 400
@@ -65,6 +74,7 @@ def shorten():
          return jsonify({'error': 'ab_urls must be a list of strings'}), 400
 
     new_url = URL(
+        user_id=user.id if user else None,
         short_code=short_code,
         long_url=long_url,
         ab_urls=ab_urls,

@@ -2,13 +2,14 @@ import io
 import csv
 import json
 import datetime
+import uuid
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, send_file, current_app, session
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from PIL import Image
 
 from app.models import db, URL, User, Click
-from app.forms import ShortenURLForm, BulkUploadForm, LoginForm, RegisterForm, LinkPasswordForm
+from app.forms import ShortenURLForm, BulkUploadForm, LoginForm, RegisterForm, LinkPasswordForm, EditURLForm
 from app.utils import generate_short_code, get_qr_data_url, generate_qr, select_ab_url, get_geo_info
 
 main = Blueprint('main', __name__)
@@ -216,7 +217,8 @@ def register():
     form = RegisterForm()
     if form.validate_on_submit():
         hashed_password = generate_password_hash(form.password.data)
-        user = User(username=form.username.data, email=form.email.data, password_hash=hashed_password)
+        api_key = str(uuid.uuid4())
+        user = User(username=form.username.data, email=form.email.data, password_hash=hashed_password, api_key=api_key)
         db.session.add(user)
         db.session.commit()
         flash('Your account has been created! You can now log in.', 'success')
@@ -248,6 +250,32 @@ def logout():
 def dashboard():
     urls = URL.query.filter_by(user_id=current_user.id).order_by(URL.created_at.desc()).all()
     return render_template('dashboard.html', urls=urls)
+
+@main.route('/edit/<short_code>', methods=['GET', 'POST'])
+@login_required
+def edit_url(short_code):
+    url_entry = URL.query.filter_by(short_code=short_code).first_or_404()
+    
+    if url_entry.user_id != current_user.id:
+        abort(403)
+        
+    form = EditURLForm(obj=url_entry)
+    
+    # Manually handle 'active' logic as it's computed in model usually, 
+    # but we might want to manually disable it. 
+    # For now, let's allow changing long_url and maybe clearing expiry.
+    # The current model doesn't have an explicit 'is_active' boolean column, it's computed.
+    # So 'active' checkbox in form is tricky unless we add a column or manipulate dates.
+    # Let's stick to editing Long URL for now to keep it simple and robust.
+    
+    if form.validate_on_submit():
+        url_entry.long_url = form.long_url.data
+        # If we added an 'active' column we'd save it here.
+        db.session.commit()
+        flash('Link updated successfully.', 'success')
+        return redirect(url_for('main.dashboard'))
+        
+    return render_template('edit_url.html', form=form, short_code=short_code)
 
 @main.route('/<short_code>/stats')
 def stats(short_code):

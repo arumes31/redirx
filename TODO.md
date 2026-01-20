@@ -9,8 +9,8 @@
 ## 2. User Accounts & Management 👤
 - [x] **User Authentication:** Registration and Login system.
 - [x] **Dashboard:** User-specific dashboard to manage links.
-- [ ] **Link History:** View and edit previously created links.
-- [ ] **API Keys:** Issue unique keys for authenticated API usage and rate limiting.
+- [x] **Link History:** View and edit previously created links.
+- [x] **API Keys:** Issue unique keys for authenticated API usage and rate limiting.
 
 ## 3. Marketing Tools 🚀
 - [ ] **UTM Builder:** Helper tool to append UTM parameters to URLs.
