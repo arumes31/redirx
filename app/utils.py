@@ -5,6 +5,45 @@ import datetime
 import base64
 from PIL import Image
 
+import requests
+import geoip2.database
+from flask import current_app
+
+import os
+from urllib.parse import urlparse
+
+def is_safe_url(target_url):
+    """Checks if the URL is not in the blocked domains list."""
+    blocked = os.environ.get('BLOCKED_DOMAINS', '').split(',')
+    if not blocked or blocked == ['']:
+        return True
+    
+    try:
+        domain = urlparse(target_url).netloc.lower()
+        for b in blocked:
+            if b.strip().lower() in domain:
+                return False
+    except Exception: # nosec B110
+        pass
+    return True
+
+def get_geo_info(ip):
+    """Fetches country from IP using local MaxMind database."""
+    if ip == '127.0.0.1' or ip.startswith('192.168.') or ip.startswith('10.'):
+        return "Local Network"
+    
+    db_path = current_app.config.get('GEOIP_DB_PATH')
+    if not db_path or not os.path.exists(db_path):
+        return "Unknown (DB Missing)"
+
+    try:
+        with geoip2.database.Reader(db_path) as reader:
+            response = reader.country(ip)
+            return response.country.name or "Unknown"
+    except Exception: # nosec B110
+        pass
+    return "Unknown"
+
 def generate_short_code(length=6):
     """Generates a random short code."""
     return str(uuid.uuid4())[:length].upper()
@@ -42,13 +81,13 @@ def generate_qr(data, color='black', bg='white', logo_img=None):
     img_buffer.seek(0)
     return img_buffer
 
-def select_ab_url(ab_urls):
+def select_rotate_target(rotate_targets):
     """Selects an alternate URL based on a simple rotation (hash of timestamp)."""
-    if not ab_urls:
+    if not rotate_targets:
         return None
     # Using microsecond for more "random" feel on rapid refreshes
-    idx = hash(str(datetime.datetime.now().microsecond)) % len(ab_urls)
-    return ab_urls[idx]
+    idx = hash(str(datetime.datetime.now().microsecond)) % len(rotate_targets)
+    return rotate_targets[idx]
 
 def get_qr_data_url(data, color='black', bg='white', logo_img=None):
     """Returns a base64 encoded data URL for the QR code."""

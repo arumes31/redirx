@@ -2,17 +2,22 @@ import io
 import csv
 import json
 import datetime
+import uuid
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, send_file, current_app, session
+from flask_login import login_user, logout_user, current_user, login_required
+from flask_limiter import Limiter
+from app import limiter # Import the instance
 from werkzeug.security import generate_password_hash, check_password_hash
 from PIL import Image
 
-from app.models import db, URL
-from app.forms import ShortenURLForm, BulkUploadForm, LoginForm
-from app.utils import generate_short_code, get_qr_data_url, generate_qr, select_ab_url
+from app.models import db, URL, User, Click
+from app.forms import ShortenURLForm, BulkUploadForm, LoginForm, RegisterForm, LinkPasswordForm, EditURLForm
+from app.utils import generate_short_code, get_qr_data_url, generate_qr, select_rotate_target, get_geo_info, is_safe_url
 
 main = Blueprint('main', __name__)
 
 @main.route('/', methods=['GET', 'POST'])
+@limiter.limit(lambda: current_app.config.get('RATELIMIT_CREATE', '10 per minute'), methods=['POST'])
 def index():
     form = ShortenURLForm()
     bulk_form = BulkUploadForm()
@@ -25,7 +30,16 @@ def index():
     # but strictly forms handle their own validation.
     
     if form.validate_on_submit():
+        if current_app.config.get('DISABLE_ANONYMOUS_CREATE') and not current_user.is_authenticated:
+            flash("Please log in to shorten URLs.", 'warning')
+            return redirect(url_for('main.login'))
+
         long_url = form.long_url.data
+        
+        if not is_safe_url(long_url):
+            flash("That destination URL is blocked for safety reasons.", 'danger')
+            return render_template('index.html', form=form, bulk_form=bulk_form)
+
         custom_code = form.custom_code.data.strip().upper() if form.custom_code.data else None
         
         # Check Custom Code Availability
@@ -36,13 +50,13 @@ def index():
             short_code = custom_code
         else:
             # Generate unique code
-            length = current_app.config['SHORT_CODE_LENGTH']
+            length = form.code_length.data or current_app.config['SHORT_CODE_LENGTH']
             short_code = generate_short_code(length)
             while URL.query.filter_by(short_code=short_code).first():
                  short_code = generate_short_code(length)
         
         # Prepare Data
-        ab_list = [u.strip() for u in form.ab_urls.data.split(',') if u.strip()] if form.ab_urls.data else None
+        rotate_list = [u.strip() for u in form.rotate_targets.data.split(',') if u.strip()] if form.rotate_targets.data else None
         
         password_hash = generate_password_hash(form.password.data) if form.password.data else None
         
@@ -55,15 +69,18 @@ def index():
             end_at = datetime.datetime.combine(form.end_date.data, form.end_time.data)
             
         expires_at = None
-        if not form.disable_expiry.data:
+        if not form.disable_expiry.data and form.expiry_hours.data != 0:
              expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=form.expiry_hours.data)
 
         # Create Record
         new_url = URL(
+            user_id=current_user.id if current_user.is_authenticated else None,
             short_code=short_code,
             long_url=long_url,
-            ab_urls=ab_list,
+            rotate_targets=rotate_list,
             password_hash=password_hash,
+            preview_mode=form.preview_mode.data,
+            stats_enabled=form.stats_enabled.data,
             start_at=start_at,
             end_at=end_at,
             expires_at=expires_at
@@ -79,14 +96,15 @@ def index():
              except Exception:
                  flash("Invalid Logo Image", 'warning')
 
+        short_url = f"https://{current_app.config['BASE_DOMAIN']}/{short_code}"
+
         qr_data = get_qr_data_url(
-            f"https://{current_app.config['BASE_DOMAIN']}/{short_code}",
+            short_url,
             color=form.qr_color.data,
             bg=form.qr_bg.data,
             logo_img=logo_img
         )
         
-        short_url = f"https://{current_app.config['BASE_DOMAIN']}/{short_code}"
         stats_url = url_for('main.stats', short_code=short_code, _external=True)
         
         flash("URL Shortened Successfully!", 'success')
@@ -166,25 +184,42 @@ def redirect_to_url(short_code):
         # Check session
         auth_key = f"auth_{short_code}"
         if not session.get(auth_key):
-             return redirect(url_for('main.login', short_code=short_code))
+             return redirect(url_for('main.link_password_auth', short_code=short_code))
              
     # Select destination
     target_url = url_entry.long_url
-    if url_entry.ab_urls:
-        alt = select_ab_url(url_entry.ab_urls)
+    if url_entry.rotate_targets:
+        alt = select_rotate_target(url_entry.rotate_targets)
         if alt:
             target_url = alt
             
     # Stats
-    url_entry.clicks += 1
-    db.session.commit()
+    if url_entry.stats_enabled:
+        url_entry.clicks_count += 1
+        
+        # Record detailed click
+        user_agent = request.user_agent
+        new_click = Click(
+            url_id=url_entry.id,
+            ip_address=request.remote_addr,
+            country=get_geo_info(request.remote_addr),
+            browser=user_agent.browser,
+            platform=user_agent.platform,
+            referrer=request.referrer or "Direct"
+        )
+        db.session.add(new_click)
+        db.session.commit()
     
+    # If preview mode is enabled
+    if url_entry.preview_mode:
+        return render_template('preview.html', target_url=target_url, short_code=short_code)
+
     return redirect(target_url, code=302)
 
-@main.route('/login/<short_code>', methods=['GET', 'POST'])
-def login(short_code):
+@main.route('/link-auth/<short_code>', methods=['GET', 'POST'])
+def link_password_auth(short_code):
     url_entry = URL.query.filter_by(short_code=short_code).first_or_404()
-    form = LoginForm()
+    form = LinkPasswordForm()
     
     if form.validate_on_submit():
         if check_password_hash(url_entry.password_hash, form.password.data):
@@ -195,18 +230,120 @@ def login(short_code):
             
     return render_template('login.html', form=form, short_code=short_code)
 
+@main.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per hour") # Prevent spam accounts
+def register():
+    if current_app.config.get('DISABLE_REGISTRATION'):
+        flash("Registration is currently disabled.", 'info')
+        return redirect(url_for('main.index'))
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    form = RegisterForm()
+    if form.validate_on_submit():
+        hashed_password = generate_password_hash(form.password.data)
+        api_key = str(uuid.uuid4())
+        user = User(username=form.username.data, email=form.email.data, password_hash=hashed_password, api_key=api_key)
+        db.session.add(user)
+        db.session.commit()
+        flash('Your account has been created! You can now log in.', 'success')
+        return redirect(url_for('main.login'))
+    return render_template('register.html', form=form)
+
+@main.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user and check_password_hash(user.password_hash, form.password.data):
+            login_user(user)
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('main.index'))
+        else:
+            flash('Login Unsuccessful. Please check username and password', 'danger')
+    return render_template('login_user.html', form=form)
+
+@main.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('main.index'))
+
+@main.route('/dashboard')
+@login_required
+def dashboard():
+    urls = URL.query.filter_by(user_id=current_user.id).order_by(URL.created_at.desc()).all()
+    return render_template('dashboard.html', urls=urls)
+
+@main.route('/edit/<short_code>', methods=['GET', 'POST'])
+@login_required
+def edit_url(short_code):
+    url_entry = URL.query.filter_by(short_code=short_code).first_or_404()
+    
+    if url_entry.user_id != current_user.id:
+        abort(403)
+        
+    form = EditURLForm(obj=url_entry)
+    
+    # Manually handle 'active' logic as it's computed in model usually, 
+    # but we might want to manually disable it. 
+    # For now, let's allow changing long_url and maybe clearing expiry.
+    # The current model doesn't have an explicit 'is_active' boolean column, it's computed.
+    # So 'active' checkbox in form is tricky unless we add a column or manipulate dates.
+    # Let's stick to editing Long URL for now to keep it simple and robust.
+    
+    if form.validate_on_submit():
+        url_entry.long_url = form.long_url.data
+        url_entry.preview_mode = form.preview_mode.data
+        url_entry.stats_enabled = form.stats_enabled.data
+        db.session.commit()
+        flash('Link updated successfully.', 'success')
+        return redirect(url_for('main.dashboard'))
+        
+    return render_template('edit_url.html', form=form, short_code=short_code)
+
 @main.route('/<short_code>/stats')
 def stats(short_code):
     url_entry = URL.query.filter_by(short_code=short_code).first_or_404()
     
     if not url_entry.is_active():
-        abort(410) # Or show stats for expired links? Let's show stats usually.
-        # But original logic aborted 410. Let's allow stats for expired links but show status.
+        # We allow viewing stats for expired links but warn
+        pass
     
     short_url = f"https://{current_app.config['BASE_DOMAIN']}/{short_code}"
     
+    # Process Analytics
+    clicks = Click.query.filter_by(url_id=url_entry.id).order_by(Click.timestamp.asc()).all()
+    
+    # 1. Clicks over time (last 7 days by default)
+    time_data = {}
+    for click in clicks:
+        day = click.timestamp.strftime('%Y-%m-%d')
+        time_data[day] = time_data.get(day, 0) + 1
+    
+    # 2. Countries
+    country_data = {}
+    for click in clicks:
+        country_data[click.country] = country_data.get(click.country, 0) + 1
+    
+    # 3. Browsers
+    browser_data = {}
+    for click in clicks:
+        name = click.browser or "Unknown"
+        browser_data[name] = browser_data.get(name, 0) + 1
+
+    # 4. Platforms
+    platform_data = {}
+    for click in clicks:
+        name = click.platform or "Unknown"
+        platform_data[name] = platform_data.get(name, 0) + 1
+        
     return render_template('stats.html', url=url_entry, short_url=short_url, 
-                           active=url_entry.is_active())
+                           active=url_entry.is_active(),
+                           time_data=time_data,
+                           country_data=country_data,
+                           browser_data=browser_data,
+                           platform_data=platform_data)
 
 @main.route('/<short_code>/qr')
 def qr_download(short_code):

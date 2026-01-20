@@ -1,58 +1,84 @@
 {% extends "base.html" %}
 {% block title %}Stats - Redirx{% endblock %}
 
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-10">
+    <div class="col-lg-11">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="fas fa-chart-line text-info"></i> Statistics</h2>
-            <a href="{{ url_for('main.index') }}" class="btn btn-outline-light btn-sm">Create New</a>
+            <h2><i class="fas fa-chart-line text-info"></i> Statistics: <small class="text-muted">{{ url.short_code }}</small></h2>
+            <div>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline-info btn-sm">Create New</a>
+            </div>
         </div>
         
-        <div class="row g-4">
-            <div class="col-md-4">
+        <!-- Summary Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
                 <div class="card h-100 text-center p-4">
-                    <div class="display-4 text-primary fw-bold">{{ url.clicks }}</div>
+                    <div class="display-4 text-primary fw-bold">{{ url.clicks_count }}</div>
                     <div class="text-muted text-uppercase small ls-1">Total Clicks</div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                  <div class="card h-100 text-center p-4">
-                    <div class="display-4 {% if active %}text-success{% else %}text-danger{% endif %} fw-bold">
-                        {% if active %}ACTIVE{% else %}INACTIVE{% endif %}
+                    <div class="display-6 {% if active %}text-success{% else %}text-danger{% endif %} fw-bold mt-2">
+                        {% if active %}ACTIVE{% else %}EXPIRED{% endif %}
                     </div>
-                    <div class="text-muted text-uppercase small ls-1">Status</div>
+                    <div class="text-muted text-uppercase small ls-1 mt-2">Status</div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card h-100 text-center p-4">
-                     <div class="h2 mt-3">{{ url.short_code }}</div>
-                     <div class="text-muted text-uppercase small ls-1">Short Code</div>
+            <div class="col-md-6">
+                <div class="card h-100 p-4">
+                     <div class="small text-muted mb-1">Target URL:</div>
+                     <div class="text-truncate"><a href="{{ url.long_url }}" class="text-info text-decoration-none">{{ url.long_url }}</a></div>
+                     <div class="small text-muted mt-2 mb-1">Short URL:</div>
+                     <div class="text-info fw-bold">{{ short_url }}</div>
                 </div>
             </div>
         </div>
 
-        <div class="card mt-4">
+        <!-- Charts Row 1: Time Series -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card p-4">
+                    <h5 class="mb-4">Click Trends</h5>
+                    <canvas id="timeChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2: Demographics -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card h-100 p-4">
+                    <h5 class="mb-4">Top Countries</h5>
+                    <canvas id="countryChart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 p-4">
+                    <h5 class="mb-4">Browsers</h5>
+                    <canvas id="browserChart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 p-4">
+                    <h5 class="mb-4">Platforms</h5>
+                    <canvas id="platformChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Card -->
+        <div class="card">
             <div class="card-body p-4">
-                <h5 class="mb-3">Link Details</h5>
+                <h5 class="mb-3">Link Configuration</h5>
                 <dl class="row mb-0">
-                    <dt class="col-sm-3 text-muted">Original URL</dt>
-                    <dd class="col-sm-9 text-break"><a href="{{ url.long_url }}" target="_blank" class="text-light">{{ url.long_url }}</a></dd>
-
-                    <dt class="col-sm-3 text-muted">Short URL</dt>
-                    <dd class="col-sm-9"><a href="{{ short_url }}" target="_blank" class="text-info">{{ short_url }}</a></dd>
-
-                    {% if url.ab_urls %}
-                    <dt class="col-sm-3 text-muted">Alternate URLs</dt>
-                    <dd class="col-sm-9">
-                        <ul class="list-unstyled mb-0">
-                            {% for alt in url.ab_urls %}
-                                <li class="text-break"><small class="text-secondary"><i class="fas fa-random me-1"></i></small> {{ alt }}</li>
-                            {% endfor %}
-                        </ul>
-                    </dd>
-                    {% endif %}
-
                     <dt class="col-sm-3 text-muted">Created At</dt>
                     <dd class="col-sm-9">{{ url.created_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</dd>
 
@@ -64,9 +90,96 @@
                             <span class="text-success">Never</span>
                         {% endif %}
                     </dd>
+
+                    {% if url.rotate_targets %}
+                    <dt class="col-sm-3 text-muted">Rotate Targets</dt>
+                    <dd class="col-sm-9">
+                        {% for alt in url.rotate_targets %}
+                            <div class="small text-secondary"><i class="fas fa-random me-2"></i>{{ alt }}</div>
+                        {% endfor %}
+                    </dd>
+                    {% endif %}
                 </dl>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: { labels: { color: '#fff' } }
+        },
+        scales: {
+            y: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+            x: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+        }
+    };
+
+    const pieOptions = {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { color: '#fff' } }
+        }
+    };
+
+    // Time Chart
+    new Chart(document.getElementById('timeChart'), {
+        type: 'line',
+        data: {
+            labels: {{ time_data.keys()|list|tojson }},
+            datasets: [{
+                label: 'Clicks',
+                data: {{ time_data.values()|list|tojson }},
+                borderColor: '#0dc5e8',
+                backgroundColor: 'rgba(13, 197, 232, 0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: chartOptions
+    });
+
+    // Country Chart
+    new Chart(document.getElementById('countryChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ country_data.keys()|list|tojson }},
+            datasets: [{
+                data: {{ country_data.values()|list|tojson }},
+                backgroundColor: ['#0dc5e8', '#667eea', '#764ba2', '#198754', '#ffc107', '#dc3545']
+            }]
+        },
+        options: pieOptions
+    });
+
+    // Browser Chart
+    new Chart(document.getElementById('browserChart'), {
+        type: 'polarArea',
+        data: {
+            labels: {{ browser_data.keys()|list|tojson }},
+            datasets: [{
+                data: {{ browser_data.values()|list|tojson }},
+                backgroundColor: ['rgba(13, 197, 232, 0.6)', 'rgba(102, 126, 234, 0.6)', 'rgba(118, 75, 162, 0.6)']
+            }]
+        },
+        options: pieOptions
+    });
+
+    // Platform Chart
+    new Chart(document.getElementById('platformChart'), {
+        type: 'pie',
+        data: {
+            labels: {{ platform_data.keys()|list|tojson }},
+            datasets: [{
+                data: {{ platform_data.values()|list|tojson }},
+                backgroundColor: ['#667eea', '#764ba2', '#0dc5e8']
+            }]
+        },
+        options: pieOptions
+    });
+</script>
 {% endblock %}

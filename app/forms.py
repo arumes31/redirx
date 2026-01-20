@@ -1,12 +1,15 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, BooleanField, IntegerField, DateField, TimeField, TextAreaField, SubmitField
-from wtforms.validators import DataRequired, URL, Optional, Length
+from wtforms.validators import DataRequired, URL, Optional, Length, Email
 
 class ShortenURLForm(FlaskForm):
     long_url = StringField('Long URL', validators=[DataRequired(), URL(message="Invalid URL")])
+    preview_mode = BooleanField('Enable Preview Mode', default=True)
+    stats_enabled = BooleanField('Enable Statistics', default=True)
     custom_code = StringField('Custom Code', validators=[Optional(), Length(min=3, max=20)])
-    ab_urls = StringField('Alternate URLs', validators=[Optional()], description="Comma-separated URLs")
+    code_length = IntegerField('Auto-gen Length', default=6, validators=[Optional()])
+    rotate_targets = StringField('Rotate Targets', validators=[Optional()], description="Comma-separated URLs")
     password = PasswordField('Password', validators=[Optional()])
     
     # Expiry
@@ -31,5 +34,23 @@ class BulkUploadForm(FlaskForm):
     submit = SubmitField('Process Bulk')
 
 class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Unlock')
+
+class RegisterForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=20)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    submit = SubmitField('Register')
+
+class LinkPasswordForm(FlaskForm): # Renamed from original LoginForm to avoid confusion
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Unlock')
+
+class EditURLForm(FlaskForm):
+    long_url = StringField('Destination URL', validators=[DataRequired(), URL()])
+    preview_mode = BooleanField('Preview Mode')
+    stats_enabled = BooleanField('Enable Statistics')
+    active = BooleanField('Active')
+    submit = SubmitField('Update Link')
