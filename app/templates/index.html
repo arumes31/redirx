@@ -30,11 +30,17 @@
                                     {% endif %}
                                 </div>
                                 <div class="col-md-12 mb-3">
-                                    <div class="form-check form-switch">
-                                        {{ form.preview_mode(class="form-check-input", role="switch") }}
-                                        {{ form.preview_mode.label(class="form-check-label fw-bold") }}
+                                    <div class="d-flex gap-4">
+                                        <div class="form-check form-switch">
+                                            {{ form.preview_mode(class="form-check-input", role="switch") }}
+                                            {{ form.preview_mode.label(class="form-check-label fw-bold") }}
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            {{ form.stats_enabled(class="form-check-input", role="switch") }}
+                                            {{ form.stats_enabled.label(class="form-check-label fw-bold") }}
+                                        </div>
                                     </div>
-                                    <div class="form-text text-light opacity-50 small">Shows an intermediate page to verify the destination before redirecting.</div>
+                                    <div class="form-text text-light opacity-50 small">Preview mode shows a confirmation page. Statistics tracks clicks and visitor info.</div>
                                 </div>
                             </div>
                             

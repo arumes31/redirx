@@ -27,6 +27,7 @@ class URL(db.Model):
     _rotate_targets = db.Column('rotate_targets', db.Text, nullable=True) # Stored as JSON string
     password_hash = db.Column(db.String(255), nullable=True)
     preview_mode = db.Column(db.Boolean, default=True)
+    stats_enabled = db.Column(db.Boolean, default=True)
     clicks_count = db.Column('clicks', db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     expires_at = db.Column(db.DateTime, nullable=True)

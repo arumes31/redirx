@@ -39,6 +39,7 @@ def shorten():
     expiry_hours = data.get('expiry_hours', current_app.config['EXPIRY_HOURS'])
     
     preview_mode = data.get('preview_mode', True)
+    stats_enabled = data.get('stats_enabled', True)
     
     start_at_str = data.get('start_at')
     end_at_str = data.get('end_at')
@@ -89,6 +90,7 @@ def shorten():
         rotate_targets=rotate_targets,
         password_hash=password_hash,
         preview_mode=preview_mode,
+        stats_enabled=stats_enabled,
         expires_at=expires_at,
         start_at=start_at,
         end_at=end_at
@@ -106,7 +108,8 @@ def shorten():
         'start_at': start_at.isoformat() if start_at else None,
         'end_at': end_at.isoformat() if end_at else None,
         'password_protected': bool(password),
-        'preview_mode': preview_mode
+        'preview_mode': preview_mode,
+        'stats_enabled': stats_enabled
     }), 201
 
 @api.route('/<short_code>', methods=['GET'])

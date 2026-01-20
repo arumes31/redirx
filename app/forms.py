@@ -6,6 +6,7 @@ from wtforms.validators import DataRequired, URL, Optional, Length, Email
 class ShortenURLForm(FlaskForm):
     long_url = StringField('Long URL', validators=[DataRequired(), URL(message="Invalid URL")])
     preview_mode = BooleanField('Enable Preview Mode', default=True)
+    stats_enabled = BooleanField('Enable Statistics', default=True)
     custom_code = StringField('Custom Code', validators=[Optional(), Length(min=3, max=20)])
     code_length = IntegerField('Auto-gen Length', default=6, validators=[Optional()])
     rotate_targets = StringField('Rotate Targets', validators=[Optional()], description="Comma-separated URLs")
@@ -50,5 +51,6 @@ class LinkPasswordForm(FlaskForm): # Renamed from original LoginForm to avoid co
 class EditURLForm(FlaskForm):
     long_url = StringField('Destination URL', validators=[DataRequired(), URL()])
     preview_mode = BooleanField('Preview Mode')
+    stats_enabled = BooleanField('Enable Statistics')
     active = BooleanField('Active')
     submit = SubmitField('Update Link')

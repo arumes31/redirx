@@ -76,6 +76,7 @@ def index():
             rotate_targets=rotate_list,
             password_hash=password_hash,
             preview_mode=form.preview_mode.data,
+            stats_enabled=form.stats_enabled.data,
             start_at=start_at,
             end_at=end_at,
             expires_at=expires_at
@@ -188,20 +189,21 @@ def redirect_to_url(short_code):
             target_url = alt
             
     # Stats
-    url_entry.clicks_count += 1
-    
-    # Record detailed click
-    user_agent = request.user_agent
-    new_click = Click(
-        url_id=url_entry.id,
-        ip_address=request.remote_addr,
-        country=get_geo_info(request.remote_addr),
-        browser=user_agent.browser,
-        platform=user_agent.platform,
-        referrer=request.referrer or "Direct"
-    )
-    db.session.add(new_click)
-    db.session.commit()
+    if url_entry.stats_enabled:
+        url_entry.clicks_count += 1
+        
+        # Record detailed click
+        user_agent = request.user_agent
+        new_click = Click(
+            url_id=url_entry.id,
+            ip_address=request.remote_addr,
+            country=get_geo_info(request.remote_addr),
+            browser=user_agent.browser,
+            platform=user_agent.platform,
+            referrer=request.referrer or "Direct"
+        )
+        db.session.add(new_click)
+        db.session.commit()
     
     # If preview mode is enabled
     if url_entry.preview_mode:
@@ -285,6 +287,7 @@ def edit_url(short_code):
     if form.validate_on_submit():
         url_entry.long_url = form.long_url.data
         url_entry.preview_mode = form.preview_mode.data
+        url_entry.stats_enabled = form.stats_enabled.data
         db.session.commit()
         flash('Link updated successfully.', 'success')
         return redirect(url_for('main.dashboard'))
