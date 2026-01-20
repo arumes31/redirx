@@ -30,6 +30,10 @@ def index():
     # but strictly forms handle their own validation.
     
     if form.validate_on_submit():
+        if current_app.config.get('DISABLE_ANONYMOUS_CREATE') and not current_user.is_authenticated:
+            flash("Please log in to shorten URLs.", 'warning')
+            return redirect(url_for('main.login'))
+
         long_url = form.long_url.data
         
         if not is_safe_url(long_url):
@@ -92,14 +96,15 @@ def index():
              except Exception:
                  flash("Invalid Logo Image", 'warning')
 
+        short_url = f"https://{current_app.config['BASE_DOMAIN']}/{short_code}"
+
         qr_data = get_qr_data_url(
-            f"https://{current_app.config['BASE_DOMAIN']}/{short_code}",
+            short_url,
             color=form.qr_color.data,
             bg=form.qr_bg.data,
             logo_img=logo_img
         )
         
-        short_url = f"https://{current_app.config['BASE_DOMAIN']}/{short_code}"
         stats_url = url_for('main.stats', short_code=short_code, _external=True)
         
         flash("URL Shortened Successfully!", 'success')
@@ -228,6 +233,9 @@ def link_password_auth(short_code):
 @main.route('/register', methods=['GET', 'POST'])
 @limiter.limit("5 per hour") # Prevent spam accounts
 def register():
+    if current_app.config.get('DISABLE_REGISTRATION'):
+        flash("Registration is currently disabled.", 'info')
+        return redirect(url_for('main.index'))
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = RegisterForm()

@@ -36,11 +36,13 @@
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('main.login') }}">Login</a>
+                            <a class="nav-link" href="{{ url_for('main.login') }}"><i class="fas fa-sign-in-alt me-1"></i> Login</a>
                         </li>
+                        {% if not config.DISABLE_REGISTRATION %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('main.register') }}">Register</a>
+                            <a class="nav-link" href="{{ url_for('main.register') }}"><i class="fas fa-user-plus me-1"></i> Register</a>
                         </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
             </div>

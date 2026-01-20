@@ -20,6 +20,9 @@ def shorten():
     # Authenticate User
     user = get_user_from_api_key()
     
+    if current_app.config.get('DISABLE_ANONYMOUS_CREATE') and not user:
+        return jsonify({'error': 'Authentication required to shorten URLs'}), 401
+
     data = request.get_json()
     if not data or 'long_url' not in data:
         return jsonify({'error': 'Missing long_url'}), 400
