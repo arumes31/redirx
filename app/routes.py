@@ -12,7 +12,7 @@ from PIL import Image
 
 from app.models import db, URL, User, Click
 from app.forms import ShortenURLForm, BulkUploadForm, LoginForm, RegisterForm, LinkPasswordForm, EditURLForm
-from app.utils import generate_short_code, get_qr_data_url, generate_qr, select_ab_url, get_geo_info, is_safe_url
+from app.utils import generate_short_code, get_qr_data_url, generate_qr, select_rotate_target, get_geo_info, is_safe_url
 
 main = Blueprint('main', __name__)
 
@@ -52,7 +52,7 @@ def index():
                  short_code = generate_short_code(length)
         
         # Prepare Data
-        ab_list = [u.strip() for u in form.ab_urls.data.split(',') if u.strip()] if form.ab_urls.data else None
+        rotate_list = [u.strip() for u in form.rotate_targets.data.split(',') if u.strip()] if form.rotate_targets.data else None
         
         password_hash = generate_password_hash(form.password.data) if form.password.data else None
         
@@ -73,10 +73,8 @@ def index():
             user_id=current_user.id if current_user.is_authenticated else None,
             short_code=short_code,
             long_url=long_url,
-            ab_urls=ab_list,
+            rotate_targets=rotate_list,
             password_hash=password_hash,
-            fb_pixel_id=form.fb_pixel_id.data,
-            ga_tracking_id=form.ga_tracking_id.data,
             preview_mode=form.preview_mode.data,
             start_at=start_at,
             end_at=end_at,
@@ -184,8 +182,8 @@ def redirect_to_url(short_code):
              
     # Select destination
     target_url = url_entry.long_url
-    if url_entry.ab_urls:
-        alt = select_ab_url(url_entry.ab_urls)
+    if url_entry.rotate_targets:
+        alt = select_rotate_target(url_entry.rotate_targets)
         if alt:
             target_url = alt
             
@@ -208,13 +206,6 @@ def redirect_to_url(short_code):
     # If preview mode is enabled
     if url_entry.preview_mode:
         return render_template('preview.html', target_url=target_url, short_code=short_code)
-
-    # If pixels are present, use intermediate page
-    if url_entry.fb_pixel_id or url_entry.ga_tracking_id:
-        return render_template('redirect.html', 
-                               target_url=target_url, 
-                               fb_id=url_entry.fb_pixel_id, 
-                               ga_id=url_entry.ga_tracking_id)
 
     return redirect(target_url, code=302)
 

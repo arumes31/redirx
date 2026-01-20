@@ -29,6 +29,16 @@
                                         <div class="text-danger small">{{ form.long_url.errors[0] }}</div>
                                     {% endif %}
                                 </div>
+                                <div class="col-md-12 mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.preview_mode(class="form-check-input", role="switch") }}
+                                        {{ form.preview_mode.label(class="form-check-label fw-bold") }}
+                                    </div>
+                                    <div class="form-text text-light opacity-50 small">Shows an intermediate page to verify the destination before redirecting.</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
                                 <div class="col-md-6 form-section">
                                     {{ form.custom_code.label(class="form-label") }}
                                     {{ form.custom_code(class="form-control", placeholder="e.g. MYLINK") }}
@@ -49,42 +59,10 @@
                             </div>
 
                             <div class="collapse" id="advancedOptions">
-                                <div class="card card-body bg-transparent border-secondary mb-3">
-                                    <h6 class="text-info"><i class="fas fa-bullhorn me-2"></i> UTM Builder</h6>
-                                    <div class="row g-2">
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control form-control-sm" id="utm_source" placeholder="Source (e.g. google, twitter)">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control form-control-sm" id="utm_medium" placeholder="Medium (e.g. cpc, banner)">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control form-control-sm" id="utm_campaign" placeholder="Campaign (e.g. summer_sale)">
-                                        </div>
-                                        <div class="col-12 mt-2">
-                                            <button type="button" class="btn btn-sm btn-outline-light w-100" onclick="appendUTM()">Append UTM Parameters</button>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div class="row">
                                     <div class="col-md-12 form-section">
-                                        {{ form.ab_urls.label(class="form-label") }}
-                                        {{ form.ab_urls(class="form-control", placeholder="https://alt1.com, https://alt2.com") }}
-                                    </div>
-                                </div>
-                                <div class="row form-section">
-                                    <div class="col-md-6">
-                                        {{ form.fb_pixel_id.label(class="form-label") }}
-                                        {{ form.fb_pixel_id(class="form-control", placeholder="e.g. 1234567890") }}
-                                    </div>
-                                    <div class="col-md-6">
-                                        {{ form.ga_tracking_id.label(class="form-label") }}
-                                        {{ form.ga_tracking_id(class="form-control", placeholder="e.g. UA-XXXXX-Y or G-XXXXXXX") }}
-                                        <div class="form-check mt-2">
-                                            {{ form.preview_mode(class="form-check-input") }}
-                                            {{ form.preview_mode.label(class="form-check-label") }}
-                                        </div>
+                                        {{ form.rotate_targets.label(class="form-label") }}
+                                        {{ form.rotate_targets(class="form-control", placeholder="https://alt1.com, https://alt2.com") }}
                                     </div>
                                 </div>
                                 <div class="row form-section">
@@ -173,27 +151,4 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    function appendUTM() {
-        let urlInput = document.getElementById('long_url');
-        let source = document.getElementById('utm_source').value.trim();
-        let medium = document.getElementById('utm_medium').value.trim();
-        let campaign = document.getElementById('utm_campaign').value.trim();
-        
-        if (!urlInput.value) {
-            alert('Please enter a URL first.');
-            return;
-        }
-        
-        try {
-            let url = new URL(urlInput.value);
-            if (source) url.searchParams.set('utm_source', source);
-            if (medium) url.searchParams.set('utm_medium', medium);
-            if (campaign) url.searchParams.set('utm_campaign', campaign);
-            urlInput.value = url.toString();
-        } catch (e) {
-            alert('Invalid URL format in "Long URL" field.');
-        }
-    }
-</script>
 {% endblock %}

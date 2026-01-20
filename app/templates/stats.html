@@ -91,10 +91,10 @@
                         {% endif %}
                     </dd>
 
-                    {% if url.ab_urls %}
-                    <dt class="col-sm-3 text-muted">Alternate Targets</dt>
+                    {% if url.rotate_targets %}
+                    <dt class="col-sm-3 text-muted">Rotate Targets</dt>
                     <dd class="col-sm-9">
-                        {% for alt in url.ab_urls %}
+                        {% for alt in url.rotate_targets %}
                             <div class="small text-secondary"><i class="fas fa-random me-2"></i>{{ alt }}</div>
                         {% endfor %}
                     </dd>

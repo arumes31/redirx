@@ -33,14 +33,12 @@ def shorten():
     code_length = int(data.get('code_length', current_app.config['SHORT_CODE_LENGTH']))
     
     # Optional parameters
-    ab_urls = data.get('ab_urls')  # Expecting a list of strings
+    rotate_targets = data.get('rotate_targets')  # Expecting a list of strings
     password = data.get('password')
     disable_expiry = data.get('disable_expiry', False)
     expiry_hours = data.get('expiry_hours', current_app.config['EXPIRY_HOURS'])
     
-    fb_pixel_id = data.get('fb_pixel_id')
-    ga_tracking_id = data.get('ga_tracking_id')
-    preview_mode = data.get('preview_mode', False)
+    preview_mode = data.get('preview_mode', True)
     
     start_at_str = data.get('start_at')
     end_at_str = data.get('end_at')
@@ -80,18 +78,16 @@ def shorten():
     if password:
         password_hash = generate_password_hash(password)
 
-    # A/B Testing URLs
-    if ab_urls and not isinstance(ab_urls, list):
-         return jsonify({'error': 'ab_urls must be a list of strings'}), 400
+    # Rotate targets
+    if rotate_targets and not isinstance(rotate_targets, list):
+         return jsonify({'error': 'rotate_targets must be a list of strings'}), 400
 
     new_url = URL(
         user_id=user.id if user else None,
         short_code=short_code,
         long_url=long_url,
-        ab_urls=ab_urls,
+        rotate_targets=rotate_targets,
         password_hash=password_hash,
-        fb_pixel_id=fb_pixel_id,
-        ga_tracking_id=ga_tracking_id,
         preview_mode=preview_mode,
         expires_at=expires_at,
         start_at=start_at,
@@ -105,11 +101,12 @@ def shorten():
         'short_code': short_code,
         'short_url': short_url,
         'long_url': long_url,
-        'ab_urls': ab_urls,
+        'rotate_targets': rotate_targets,
         'expires_at': expires_at.isoformat() if expires_at else None,
         'start_at': start_at.isoformat() if start_at else None,
         'end_at': end_at.isoformat() if end_at else None,
-        'password_protected': bool(password)
+        'password_protected': bool(password),
+        'preview_mode': preview_mode
     }), 201
 
 @api.route('/<short_code>', methods=['GET'])

@@ -24,11 +24,9 @@ class URL(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True) # Nullable for anonymous links
     short_code = db.Column(db.String(20), unique=True, nullable=False, index=True)
     long_url = db.Column(db.Text, nullable=False)
-    _ab_urls = db.Column('ab_urls', db.Text, nullable=True) # Stored as JSON string
+    _rotate_targets = db.Column('rotate_targets', db.Text, nullable=True) # Stored as JSON string
     password_hash = db.Column(db.String(255), nullable=True)
-    fb_pixel_id = db.Column(db.String(50), nullable=True)
-    ga_tracking_id = db.Column(db.String(50), nullable=True)
-    preview_mode = db.Column(db.Boolean, default=False)
+    preview_mode = db.Column(db.Boolean, default=True)
     clicks_count = db.Column('clicks', db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     expires_at = db.Column(db.DateTime, nullable=True)
@@ -39,17 +37,17 @@ class URL(db.Model):
     clicks = db.relationship('Click', backref='url', lazy=True, cascade="all, delete-orphan")
 
     @property
-    def ab_urls(self):
-        if self._ab_urls:
-            return json.loads(self._ab_urls)
+    def rotate_targets(self):
+        if self._rotate_targets:
+            return json.loads(self._rotate_targets)
         return []
 
-    @ab_urls.setter
-    def ab_urls(self, value):
+    @rotate_targets.setter
+    def rotate_targets(self, value):
         if value:
-            self._ab_urls = json.dumps(value)
+            self._rotate_targets = json.dumps(value)
         else:
-            self._ab_urls = None
+            self._rotate_targets = None
 
     def is_active(self):
         now = datetime.now(timezone.utc).replace(tzinfo=None)

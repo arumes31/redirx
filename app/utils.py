@@ -75,13 +75,13 @@ def generate_qr(data, color='black', bg='white', logo_img=None):
     img_buffer.seek(0)
     return img_buffer
 
-def select_ab_url(ab_urls):
+def select_rotate_target(rotate_targets):
     """Selects an alternate URL based on a simple rotation (hash of timestamp)."""
-    if not ab_urls:
+    if not rotate_targets:
         return None
     # Using microsecond for more "random" feel on rapid refreshes
-    idx = hash(str(datetime.datetime.now().microsecond)) % len(ab_urls)
-    return ab_urls[idx]
+    idx = hash(str(datetime.datetime.now().microsecond)) % len(rotate_targets)
+    return rotate_targets[idx]
 
 def get_qr_data_url(data, color='black', bg='white', logo_img=None):
     """Returns a base64 encoded data URL for the QR code."""

@@ -56,7 +56,7 @@ The fastest way to get started is using Docker Compose:
   "expiry_hours": 24,
   "disable_expiry": false,
   "password": "secret-password",
-  "ab_urls": ["https://alt1.com", "https://alt2.com"],
+  "rotate_targets": ["https://alt1.com", "https://alt2.com"],
   "start_at": "2024-01-01T12:00:00Z",
   "end_at": "2024-12-31T12:00:00Z"
 }
@@ -70,7 +70,7 @@ The fastest way to get started is using Docker Compose:
   "long_url": "https://example.com/my-long-link",
   "expires_at": "2024-01-02T12:00:00+00:00",
   "password_protected": true,
-  "ab_urls": ["https://alt1.com", "https://alt2.com"]
+  "rotate_targets": ["https://alt1.com", "https://alt2.com"]
 }
 ```
 
