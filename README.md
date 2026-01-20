@@ -46,7 +46,7 @@ docker-compose up -d
 | `MAXMIND_LICENSE_KEY` | - | Required for local GeoIP updates. |
 | `ENABLE_PHISHING_CHECK` | `true` | Toggle phishing domain blocking. |
 | `ENABLE_AUTO_REMOVE_PHISHING` | `false` | Automatically delete links found on phishing lists. |
-| `PHISHING_LIST_URLS` | (MitchellKrogza) | Comma-separated list of phishing list sources. |
+| `PHISHING_LIST_URLS` | `https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-ACTIVE.txt` | Comma-separated list of phishing list sources. |
 | `DISABLE_ANONYMOUS_CREATE` | `false` | If true, only logged-in users can shorten URLs. |
 | `DISABLE_REGISTRATION` | `false` | If true, the registration page is disabled. |
 
