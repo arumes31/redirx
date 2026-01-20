@@ -8,23 +8,63 @@ from PIL import Image
 import requests
 import geoip2.database
 from flask import current_app
+import time
 
 import os
 from urllib.parse import urlparse
 
-def is_safe_url(target_url):
-    """Checks if the URL is not in the blocked domains list."""
-    blocked = os.environ.get('BLOCKED_DOMAINS', '').split(',')
-    if not blocked or blocked == ['']:
-        return True
+def update_phishing_list():
+    """Downloads the latest phishing domain list."""
+    url = current_app.config.get('PHISHING_LIST_URL')
+    path = current_app.config.get('BLOCKED_DOMAINS_PATH')
+    if not url or not path:
+        return
     
     try:
-        domain = urlparse(target_url).netloc.lower()
-        for b in blocked:
-            if b.strip().lower() in domain:
-                return False
+        # Check if file is old (e.g. older than 24h)
+        if os.path.exists(path):
+            file_age = time.time() - os.path.getmtime(path)
+            if file_age < 86400: # 24 hours
+                return
+
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(response.text)
     except Exception: # nosec B110
         pass
+
+def is_safe_url(target_url):
+    """Checks if the URL is not in the blocked domains list."""
+    # 1. Check manual overrides from ENV
+    blocked_env = os.environ.get('BLOCKED_DOMAINS', '').split(',')
+    domain = ""
+    try:
+        domain = urlparse(target_url).netloc.lower()
+        if not domain: # For relative or malformed URLs
+             return False
+             
+        for b in blocked_env:
+            if b.strip() and b.strip().lower() in domain:
+                return False
+    except Exception:
+        return False
+
+    # 2. Check downloaded list
+    path = current_app.config.get('BLOCKED_DOMAINS_PATH')
+    if path and os.path.exists(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                # We check for exact match or suffix to be efficient but safe
+                # Note: Large files should be optimized (e.g. bloom filter or set)
+                # For now, we do a basic search
+                for line in f:
+                    blocked_domain = line.strip().lower()
+                    if blocked_domain and (domain == blocked_domain or domain.endswith('.' + blocked_domain)):
+                        return False
+        except Exception: # nosec B110
+            pass
+            
     return True
 
 def get_geo_info(ip):
