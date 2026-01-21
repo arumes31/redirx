@@ -62,6 +62,11 @@ docker-compose up -d
 
 ## 🔌 API Documentation
 
+### Authentication
+To use the API, you must provide your personal API key in the request headers. You can find your API key in your user profile/settings after logging in.
+
+**Header:** `X-API-KEY: your_api_key_here`
+
 ### Shorten URL
 **Endpoint:** `POST /api/v1/shorten`
 
