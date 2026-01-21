@@ -1,6 +1,6 @@
-# Redirx 🚀
+# Redrx 🚀
 
-Redirx is a modern, feature-rich URL shortener built with Python (Flask), PostgreSQL, and SQLAlchemy. It features a sleek dark UI with interactive background animations and robust security features.
+Redrx is a modern, feature-rich URL shortener built with Python (Flask), PostgreSQL, and SQLAlchemy. It features a sleek dark UI with interactive background animations and robust security features.
 
 ## ✨ Features
 
@@ -71,7 +71,6 @@ docker-compose up -d
   "long_url": "https://example.com/my-long-link",
   "custom_code": "optional-custom-code",
   "expiry_hours": 24,
-  "disable_expiry": false,
   "password": "secret-password",
   "rotate_targets": ["https://alt1.com", "https://alt2.com"],
   "stats_enabled": true,
