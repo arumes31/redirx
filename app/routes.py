@@ -205,11 +205,12 @@ def redirect_to_url(short_code):
         # Record detailed click
         ua_string = request.headers.get('User-Agent')
         user_agent = parse(ua_string)
+        client_ip = get_client_ip(request)
         
         new_click = Click(
             url_id=url_entry.id,
-            ip_address=request.remote_addr,
-            country=get_geo_info(request.remote_addr),
+            ip_address=client_ip,
+            country=get_geo_info(client_ip, request),
             browser=user_agent.browser.family,
             platform=user_agent.os.family,
             referrer=request.referrer or "Direct"
