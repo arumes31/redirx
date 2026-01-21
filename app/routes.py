@@ -3,7 +3,7 @@ import csv
 import json
 import datetime
 import uuid
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, send_file, current_app, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, send_file, current_app, session, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_limiter import Limiter
 from app import limiter # Import the instance
@@ -193,6 +193,10 @@ def redirect_to_url(short_code):
         if alt:
             target_url = alt
             
+    # Update last accessed
+    url_entry.last_accessed_at = datetime.datetime.now(datetime.timezone.utc)
+    db.session.commit()
+
     # Stats
     if url_entry.stats_enabled:
         url_entry.clicks_count += 1
@@ -273,7 +277,79 @@ def logout():
 @login_required
 def dashboard():
     urls = URL.query.filter_by(user_id=current_user.id).order_by(URL.created_at.desc()).all()
-    return render_template('dashboard.html', urls=urls)
+    
+    # Calculate stats
+    total_links = len(urls)
+    total_clicks = sum(u.clicks_count for u in urls)
+    active_links = sum(1 for u in urls if u.is_active())
+    top_performer = max(urls, key=lambda u: u.clicks_count) if urls else None
+    
+    stats = {
+        'total_links': total_links,
+        'total_clicks': total_clicks,
+        'active_links': active_links,
+        'top_performer': top_performer
+    }
+    
+    return render_template('dashboard.html', urls=urls, stats=stats)
+
+@main.route('/regenerate-api-key', methods=['POST'])
+@login_required
+def regenerate_api_key():
+    current_user.api_key = str(uuid.uuid4())
+    db.session.commit()
+    flash('API Key regenerated successfully.', 'success')
+    return redirect(url_for('main.dashboard'))
+
+@main.route('/toggle-status/<short_code>', methods=['POST'])
+@login_required
+def toggle_status(short_code):
+    url_entry = URL.query.filter_by(short_code=short_code).first_or_404()
+    if url_entry.user_id != current_user.id:
+        abort(403)
+    url_entry.is_enabled = not url_entry.is_enabled
+    db.session.commit()
+    return jsonify({'status': 'success', 'is_enabled': url_entry.is_enabled})
+
+@main.route('/export-links')
+@login_required
+def export_links():
+    urls = URL.query.filter_by(user_id=current_user.id).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Short Code', 'Long URL', 'Clicks', 'Created At', 'Last Accessed', 'Expires At'])
+    
+    for u in urls:
+        writer.writerow([
+            u.short_code, 
+            u.long_url, 
+            u.clicks_count, 
+            u.created_at.isoformat(),
+            u.last_accessed_at.isoformat() if u.last_accessed_at else 'Never',
+            u.expires_at.isoformat() if u.expires_at else 'Never'
+        ])
+    
+    output.seek(0)
+    return send_file(
+        io.BytesIO(output.getvalue().encode('utf-8')),
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name='my_links.csv'
+    )
+
+@main.route('/bulk-delete', methods=['POST'])
+@login_required
+def bulk_delete():
+    ids = request.form.getlist('link_ids')
+    if not ids:
+        flash('No links selected.', 'warning')
+        return redirect(url_for('main.dashboard'))
+        
+    URL.query.filter(URL.id.in_(ids), URL.user_id == current_user.id).delete(synchronize_session=False)
+    db.session.commit()
+    flash(f'Successfully deleted {len(ids)} links.', 'info')
+    return redirect(url_for('main.dashboard'))
 
 @main.route('/edit/<short_code>', methods=['GET', 'POST'])
 @login_required
@@ -285,12 +361,11 @@ def edit_url(short_code):
         
     form = EditURLForm(obj=url_entry)
     
-    # Manually handle 'active' logic as it's computed in model usually, 
-    # but we might want to manually disable it. 
-    # For now, let's allow changing long_url and maybe clearing expiry.
-    # The current model doesn't have an explicit 'is_active' boolean column, it's computed.
-    # So 'active' checkbox in form is tricky unless we add a column or manipulate dates.
-    # Let's stick to editing Long URL for now to keep it simple and robust.
+    if request.method == 'GET' and url_entry.expires_at:
+        now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        diff = url_entry.expires_at - now
+        hours = int(diff.total_seconds() / 3600)
+        form.expiry_hours.data = max(0, hours)
     
     if form.validate_on_submit():
         url_entry.long_url = form.long_url.data
