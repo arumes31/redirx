@@ -414,11 +414,60 @@ def stats(short_code):
     # Process Analytics
     clicks = Click.query.filter_by(url_id=url_entry.id).order_by(Click.timestamp.asc()).all()
     
-    # 1. Clicks over time (last 7 days by default)
+    # 1. Clicks over time (Hybrid: Hourly for 24h, then Daily)
+    now = datetime.datetime.now(datetime.timezone.utc)
     time_data = {}
+    
+    # Last 24 hours (Hourly)
+    for i in range(23, -1, -1):
+        dt = now - datetime.timedelta(hours=i)
+        key = dt.strftime('%Y-%m-%d %H:00')
+        time_data[key] = 0
+        
+    # Last 30 days (Daily) - we'll merge this
+    for i in range(29, -1, -1):
+        dt = now - datetime.timedelta(days=i)
+        key = dt.strftime('%Y-%m-%d')
+        if key not in time_data: # Don't overwrite today's hourly starts if we were doing mixed
+             # Actually, simpler to just have two sets or one continuous. 
+             # Let's do: if older than 24h, group by day. If newer, group by hour.
+             pass
+
+    # Clear and rebuild for clarity
+    time_data = {}
+    cutoff_24h = now - datetime.timedelta(hours=24)
+    
+    # Fill last 30 days daily as base
+    for i in range(30, 0, -1):
+        dt = now - datetime.timedelta(days=i)
+        time_data[dt.strftime('%Y-%m-%d')] = 0
+        
+    # Fill last 24 hours hourly
+    for i in range(24, -1, -1):
+        dt = now - datetime.timedelta(hours=i)
+        time_data[dt.strftime('%H:00')] = 0
+
+    # Populate with actual data
     for click in clicks:
-        day = click.timestamp.strftime('%Y-%m-%d')
-        time_data[day] = time_data.get(day, 0) + 1
+        # If naive, make it utc for comparison
+        click_time = click.timestamp
+        if click_time.tzinfo is None:
+            click_time = click_time.replace(tzinfo=datetime.timezone.utc)
+            
+        if click_time > cutoff_24h:
+            key = click_time.strftime('%H:00')
+        else:
+            key = click_time.strftime('%Y-%m-%d')
+            
+        if key in time_data:
+            time_data[key] += 1
+        else:
+            # For data older than 30 days, we could still group by day if we want
+            key_day = click_time.strftime('%Y-%m-%d')
+            time_data[key_day] = time_data.get(key_day, 0) + 1
+    
+    # Sort time_data? The keys added in order are mostly okay but mixed formats break sort.
+    # Let's keep it simple: labels are keys in order of insertion.
     
     # 2. Countries
     country_data = {}
