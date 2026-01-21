@@ -5,8 +5,6 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-body p-4 p-md-5">
-                <h1 class="text-center mb-4"><i class="fas fa-link me-2"></i>Redrx</h1>
-                
                 <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single" type="button">Single Link</button>
@@ -34,13 +32,18 @@
                                         <div class="form-check form-switch">
                                             {{ form.preview_mode(class="form-check-input", role="switch") }}
                                             {{ form.preview_mode.label(class="form-check-label fw-bold") }}
+                                            <i class="fas fa-info-circle text-muted small ms-1" 
+                                               data-bs-toggle="tooltip" 
+                                               title="Preview mode shows a confirmation page before redirecting."></i>
                                         </div>
                                         <div class="form-check form-switch">
                                             {{ form.stats_enabled(class="form-check-input", role="switch") }}
                                             {{ form.stats_enabled.label(class="form-check-label fw-bold") }}
+                                            <i class="fas fa-info-circle text-muted small ms-1" 
+                                               data-bs-toggle="tooltip" 
+                                               title="Statistics tracks clicks, countries, browsers, and platforms."></i>
                                         </div>
                                     </div>
-                                    <div class="form-text text-light opacity-50 small">Preview mode shows a confirmation page. Statistics tracks clicks and visitor info.</div>
                                 </div>
                             </div>
                             
@@ -159,4 +162,12 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
+</script>
 {% endblock %}
