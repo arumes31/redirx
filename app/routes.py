@@ -470,9 +470,13 @@ def stats(short_code):
         if rc.ip_address:
             parts = rc.ip_address.split('.')
             if len(parts) == 4:
-                rc.ip_anonymized = f"{parts[0]}.{parts[1]}.{parts[2]}.xxx"
+                rc.ip_anonymized = f"{parts[0]}.{parts[1]}.xxx.xxx"
             else: # IPv6
-                rc.ip_anonymized = rc.ip_address[:rc.ip_address.rfind(':')] + ":xxxx"
+                v6_parts = rc.ip_address.split(':')
+                if len(v6_parts) >= 2:
+                    rc.ip_anonymized = f"{v6_parts[0]}:{v6_parts[1]}:xxxx:xxxx"
+                else:
+                    rc.ip_anonymized = rc.ip_address[:rc.ip_address.find(':')+1] + "xxxx" if ':' in rc.ip_address else "xxxx"
         else:
             rc.ip_anonymized = "Unknown"
 
