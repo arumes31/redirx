@@ -41,6 +41,12 @@ class URL(db.Model):
     # Relationship to detailed clicks
     clicks = db.relationship('Click', backref='url', lazy=True, cascade="all, delete-orphan")
 
+    # Indices for performance
+    __table_args__ = (
+        db.Index('idx_url_user_created', 'user_id', 'created_at'),
+        db.Index('idx_url_code_enabled', 'short_code', 'is_enabled'),
+    )
+
     @property
     def rotate_targets(self):
         if self._rotate_targets:
@@ -78,3 +84,8 @@ class Click(db.Model):
     browser = db.Column(db.String(50))
     platform = db.Column(db.String(50))
     referrer = db.Column(db.String(255), default="Direct")
+
+    # Indices for performance
+    __table_args__ = (
+        db.Index('idx_click_url_timestamp', 'url_id', 'timestamp'),
+    )

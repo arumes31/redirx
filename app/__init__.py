@@ -2,6 +2,7 @@ from flask import Flask, request, redirect
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 from prometheus_flask_exporter import PrometheusMetrics
 from app.models import db, User
@@ -14,6 +15,8 @@ from urllib.parse import urlparse
 login_manager = LoginManager()
 login_manager.login_view = 'main.login'
 login_manager.login_message_category = 'info'
+
+csrf = CSRFProtect()
 
 def get_actual_ip():
     """Custom key function for Limiter that respects Cloudflare headers."""
@@ -75,6 +78,7 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     limiter.init_app(app)
     metrics.init_app(app)
+    csrf.init_app(app)
 
     @app.route('/metrics')
     @limiter.limit("10 per minute") # Strict limit for metrics to prevent abuse

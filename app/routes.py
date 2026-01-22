@@ -11,7 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from PIL import Image
 from user_agents import parse
 from urllib.parse import urlparse
-from sqlalchemy import func
+from sqlalchemy import func, text
 from prometheus_client import Counter
 
 # Custom Metrics
@@ -21,9 +21,36 @@ ratelimit_hits_total = Counter('redrx_ratelimit_hits_total', 'Total number of re
 
 from app.models import db, URL, User, Click
 from app.forms import ShortenURLForm, LoginForm, RegisterForm, LinkPasswordForm, EditURLForm
-from app.utils import generate_short_code, get_qr_data_url, generate_qr, select_rotate_target, get_geo_info, is_safe_url, get_client_ip
+from app.utils import generate_short_code, get_qr_data_url, generate_qr, select_rotate_target, get_geo_info, is_safe_url, get_client_ip, _get_redis_client
 
 main = Blueprint('main', __name__)
+
+@main.route('/health')
+def health_check():
+    health = {"status": "healthy", "checks": {}}
+    
+    # 1. Database Check
+    try:
+        db.session.execute(text('SELECT 1'))
+        health["checks"]["database"] = "ok"
+    except Exception as e:
+        health["status"] = "unhealthy"
+        health["checks"]["database"] = f"error: {str(e)}"
+
+    # 2. Redis Check
+    try:
+        r = _get_redis_client()
+        if r and r.ping():
+            health["checks"]["redis"] = "ok"
+        else:
+            health["checks"]["redis"] = "disconnected"
+            health["status"] = "degraded"
+    except Exception as e:
+        health["checks"]["redis"] = f"error: {str(e)}"
+        health["status"] = "degraded"
+
+    code = 200 if health["status"] == "healthy" else 503
+    return jsonify(health), code
 
 @main.route('/', methods=['GET', 'POST'])
 @limiter.limit(lambda: current_app.config.get('RATELIMIT_CREATE', '10 per minute'), methods=['POST'])
