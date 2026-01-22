@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash
 from app.models import db, URL, User
 from app.utils import generate_short_code, generate_qr, is_safe_url
 from app import limiter
+from app.routes import shortened_links_total # Import the custom counter
 import datetime
 import base64
 
@@ -99,6 +100,9 @@ def shorten():
     )
     db.session.add(new_url)
     db.session.commit()
+
+    # Increment Prometheus Counter
+    shortened_links_total.inc()
 
     short_url = f"https://{current_app.config['BASE_DOMAIN']}/{short_code}"
     return jsonify({

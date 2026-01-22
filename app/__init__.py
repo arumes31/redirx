@@ -3,6 +3,7 @@ from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
+from prometheus_flask_exporter import PrometheusMetrics
 from app.models import db, User
 from config import Config
 import os
@@ -34,6 +35,8 @@ limiter = Limiter(
     default_limits=[limit_default],
     storage_uri=storage_url
 )
+
+metrics = PrometheusMetrics.for_app_factory(path=None)
 
 class AnonymizeFilter(logging.Filter):
     def filter(self, record):
@@ -71,6 +74,12 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     limiter.init_app(app)
+    metrics.init_app(app)
+
+    @app.route('/metrics')
+    @limiter.limit("10 per minute") # Strict limit for metrics to prevent abuse
+    def custom_metrics():
+        return metrics.export()
 
     @login_manager.user_loader
     def load_user(user_id):
