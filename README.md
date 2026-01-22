@@ -124,12 +124,6 @@ To use the API, you must provide your personal API key in the request headers. Y
 }
 ```
 
-## 🧪 Running Tests
-
-```bash
-python -m pytest
-```
-
 ## 🛡 Security
 
 - Daily security scans via Bandit.
