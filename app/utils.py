@@ -13,6 +13,11 @@ import time
 import os
 from urllib.parse import urlparse
 
+# Simple in-memory cache for GeoIP lookups
+# Format: {ip: (country_name, expiry_timestamp)}
+_geo_cache = {}
+_GEO_CACHE_TTL = 300 # 5 minutes
+
 def update_phishing_list():
     """Downloads the latest phishing domain lists."""
     if not current_app.config.get('ENABLE_PHISHING_CHECK'):
@@ -158,27 +163,51 @@ def get_client_country(request):
     return None
 
 def get_geo_info(ip, request=None):
-    """Fetches country from IP using local MaxMind database or Cloudflare header."""
+    """Fetches country from IP using local MaxMind database or Cloudflare header with short in-memory cache."""
+    # 1. Check Cache
+    now = time.time()
+    if ip in _geo_cache:
+        cached_val, expiry = _geo_cache[ip]
+        if now < expiry:
+            return cached_val
+        else:
+            del _geo_cache[ip]
+
+    # 2. Check Cloudflare
     if request:
         cf_country = get_client_country(request)
         if cf_country:
-            # Note: Cloudflare returns 'XX' for unknown and 'T1' for Tor
+            # We don't necessarily cache CF headers as they are free/instant, 
+            # but for consistency we can.
+            _geo_cache[ip] = (cf_country, now + _GEO_CACHE_TTL)
             return cf_country
 
     if ip == '127.0.0.1' or ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('172.'):
         return "Local Network"
     
+    # 3. Check Local DB
     db_path = current_app.config.get('GEOIP_DB_PATH')
     if not db_path or not os.path.exists(db_path):
         return "Unknown (DB Missing)"
 
+    country = "Unknown"
     try:
         with geoip2.database.Reader(db_path) as reader:
             response = reader.country(ip)
-            return response.country.name or "Unknown"
+            country = response.country.name or "Unknown"
     except Exception: # nosec B110
         pass
-    return "Unknown"
+    
+    # Update Cache
+    _geo_cache[ip] = (country, now + _GEO_CACHE_TTL)
+    
+    # Prevent cache from growing indefinitely
+    if len(_geo_cache) > 1000:
+        # Simple cleanup: remove 10% of cache if too large
+        keys = list(_geo_cache.keys())[:100]
+        for k in keys: del _geo_cache[k]
+
+    return country
 
 def generate_short_code(length=6):
     """Generates a random short code."""
