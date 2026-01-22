@@ -49,7 +49,10 @@ docker-compose up -d
 | `DISABLE_ANONYMOUS_CREATE` | `false` | If true, only logged-in users can shorten URLs. |
 | `DISABLE_REGISTRATION` | `false` | If true, the registration page is disabled. |
 | `USE_CLOUDFLARE` | `false` | Enable support for Cloudflare headers (CF-Connecting-IP, CF-IPCountry). |
-| `RATELIMIT_STORAGE_URL` | `memory://` | Storage backend for rate limiting (e.g., `redis://localhost:6379`). |
+| `RATELIMIT_STORAGE_URL` | `memory://` | Storage backend for rate limiting (e.g., `redis://redis:6379`). |
+| `RATELIMIT_DEFAULT` | `200 per day;50 per hour` | Default rate limit for general browsing. |
+| `RATELIMIT_CREATE` | `10 per minute` | Rate limit for creating new links. |
+| `RATELIMIT_REDIRECT` | `100 per minute` | Rate limit for link redirections. |
 
 1. Install dependencies:
    ```bash
