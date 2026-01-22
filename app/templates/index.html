@@ -73,9 +73,9 @@
                                         <div class="text-danger small">{{ form.expiry_hours.errors[0] }}</div>
                                     {% endif %}
                                     <div class="form-text text-light opacity-50 small">
-                                        Max: 1 year (8760h). 
+                                        Max: 100 years. 
                                         {% if not current_user.is_authenticated %}
-                                            <span class="text-info">Login required for "Never".</span>
+                                            <span class="text-info">Login required for > 1 year or "Never".</span>
                                         {% else %}
                                             Set to 0 for "Never".
                                         {% endif %}

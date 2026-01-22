@@ -15,7 +15,7 @@ class ShortenURLForm(FlaskForm):
     password = PasswordField('Password', validators=[Optional()])
     
     # Expiry
-    expiry_hours = IntegerField('Expiry (Hours)', default=24, validators=[Optional(), NumberRange(min=0, max=8760, message="Maximum expiry is 1 year (8760 hours).")])
+    expiry_hours = IntegerField('Expiry (Hours)', default=24, validators=[Optional(), NumberRange(min=0, max=876000, message="Maximum expiry is 100 years (876,000 hours).")])
     
     # Scheduling
     start_date = DateField('Start Date', validators=[Optional()])
@@ -49,7 +49,7 @@ class EditURLForm(FlaskForm):
     long_url = StringField('Destination URL', validators=[DataRequired(), URL()])
     ios_target_url = StringField('iOS Target URL', validators=[Optional(), URL()])
     android_target_url = StringField('Android Target URL', validators=[Optional(), URL()])
-    expiry_hours = IntegerField('Expiry (Hours) from now', validators=[Optional(), NumberRange(min=0, max=8760, message="Maximum expiry is 1 year (8760 hours).")])
+    expiry_hours = IntegerField('Expiry (Hours) from now', validators=[Optional(), NumberRange(min=0, max=876000, message="Maximum expiry is 100 years (876,000 hours).")])
     preview_mode = BooleanField('Preview Mode')
     stats_enabled = BooleanField('Enable Statistics')
     submit = SubmitField('Update Link')

@@ -72,11 +72,16 @@ def index():
             
         expires_at = None
         if form.expiry_hours.data is not None:
-            if form.expiry_hours.data == 0:
+            if form.expiry_hours.data == 0 or form.expiry_hours.data > 8760:
                 if not current_user.is_authenticated:
-                    flash("Please log in to create permanent links (Expiry: Never).", 'warning')
+                    msg = "Please log in to create links longer than 1 year or permanent links."
+                    flash(msg, 'warning')
                     return render_template('index.html', form=form)
-                expires_at = None
+                
+                if form.expiry_hours.data == 0:
+                    expires_at = None
+                else:
+                    expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=form.expiry_hours.data)
             else:
                 expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=form.expiry_hours.data)
 
