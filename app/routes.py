@@ -17,6 +17,7 @@ from prometheus_client import Counter
 # Custom Metrics
 shortened_links_total = Counter('redrx_shortened_links_total', 'Total number of shortened links created')
 redirections_total = Counter('redrx_redirections_total', 'Total number of link redirections')
+ratelimit_hits_total = Counter('redrx_ratelimit_hits_total', 'Total number of requests hitting the rate limit')
 
 from app.models import db, URL, User, Click
 from app.forms import ShortenURLForm, LoginForm, RegisterForm, LinkPasswordForm, EditURLForm
@@ -548,6 +549,9 @@ def internal_error(e):
 
 @main.errorhandler(429)
 def ratelimit_handler(e):
+    # Increment Prometheus Counter
+    ratelimit_hits_total.inc()
+    
     client_ip = get_client_ip(request)
     client_country = get_geo_info(client_ip, request)
     return render_template('429.html', client_ip=client_ip, client_country=client_country), 429
