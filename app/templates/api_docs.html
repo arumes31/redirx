@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}API Documentation - Redrx{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0 text-white"><i class="fas fa-plug me-2 text-info"></i>API Documentation</h3>
+                    <span class="badge bg-info text-dark">v1.0</span>
+                </div>
+                <div class="card-body">
+                    <p class="lead text-light">Integrate Redrx directly into your applications.</p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-key me-2"></i><strong>Authentication:</strong> 
+                        Include your API key in the <code>X-API-KEY</code> header. You can find your key in the Dashboard.
+                    </div>
+
+                    <h4 class="mt-4 text-info">1. Shorten a URL</h4>
+                    <p class="text-muted">Create a new shortened link with optional customization.</p>
+                    
+                    <div class="card bg-black border-secondary mb-4">
+                        <div class="card-header border-secondary p-2">
+                            <span class="badge bg-success me-2">POST</span> <code class="text-light">/api/v1/shorten</code>
+                        </div>
+                        <div class="card-body p-0">
+<pre class="m-0 p-3 text-light" style="overflow-x: auto;"><code>curl -X POST https://{{ config.BASE_DOMAIN }}/api/v1/shorten \
+  -H "X-API-KEY: your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "long_url": "https://example.com/my-long-link",
+    "custom_code": "my-code",
+    "expiry_hours": 24,
+    "password": "secret-password",
+    "ios_target_url": "https://apps.apple.com/app/id123",
+    "android_target_url": "https://play.google.com/store/apps/details?id=com.example",
+    "rotate_targets": ["https://alt1.com", "https://alt2.com"]
+}'</code></pre>
+                        </div>
+                    </div>
+
+                    <h5 class="text-light mt-3">Response</h5>
+                    <div class="card bg-black border-secondary mb-4">
+                        <div class="card-body p-0">
+<pre class="m-0 p-3 text-success" style="overflow-x: auto;"><code>{
+  "short_code": "my-code",
+  "short_url": "https://{{ config.BASE_DOMAIN }}/my-code",
+  "long_url": "https://example.com/my-long-link",
+  "expires_at": "2024-01-02T12:00:00+00:00",
+  "password_protected": true,
+  "ios_target_url": "https://apps.apple.com/app/id123",
+  "android_target_url": "https://play.google.com/store/apps/details?id=com.example"
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <hr class="border-secondary my-5">
+
+                    <h4 class="mt-4 text-info">2. Get Link Info</h4>
+                    <p class="text-muted">Retrieve details and statistics for a specific link.</p>
+                    
+                    <div class="card bg-black border-secondary mb-4">
+                        <div class="card-header border-secondary p-2">
+                            <span class="badge bg-primary me-2">GET</span> <code class="text-light">/api/v1/&lt;short_code&gt;</code>
+                        </div>
+                        <div class="card-body p-0">
+<pre class="m-0 p-3 text-light" style="overflow-x: auto;"><code>curl -X GET https://{{ config.BASE_DOMAIN }}/api/v1/my-code \
+  -H "X-API-KEY: your_api_key_here"</code></pre>
+                        </div>
+                    </div>
+
+                    <h5 class="text-light mt-3">Response</h5>
+                    <div class="card bg-black border-secondary">
+                        <div class="card-body p-0">
+<pre class="m-0 p-3 text-success" style="overflow-x: auto;"><code>{
+  "short_code": "my-code",
+  "long_url": "https://example.com/my-long-link",
+  "clicks": 42,
+  "created_at": "2024-01-01T12:00:00",
+  "active": true
+}</code></pre>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

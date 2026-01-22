@@ -523,3 +523,7 @@ def sitemap():
     if not current_app.config.get('ENABLE_SEO'):
         abort(404)
     return render_template('sitemap.xml'), 200, {'Content-Type': 'application/xml'}
+
+@main.route('/api-docs')
+def api_docs():
+    return render_template('api_docs.html')
