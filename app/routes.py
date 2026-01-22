@@ -406,7 +406,10 @@ def delete_url(short_code):
 def stats(short_code):
     url_entry = URL.query.filter_by(short_code=short_code).first_or_404()
     
-    if url_entry.user_id != current_user.id:
+    # Check ownership: If the URL has an owner, only that owner can see stats.
+    # If it's anonymous (user_id is None), then anyone can see stats.
+    current_user_id = current_user.id if current_user.is_authenticated else None
+    if url_entry.user_id != current_user_id:
         abort(403)
         
     range_type = request.args.get('range', '30d')
