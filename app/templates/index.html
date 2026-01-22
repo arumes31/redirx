@@ -41,7 +41,7 @@
                                             {{ form.stats_enabled.label(class="form-check-label fw-bold") }}
                                             <i class="fas fa-info-circle text-muted small ms-1" 
                                                data-bs-toggle="tooltip" 
-                                               title="Enable this to collect anonymized data on link performance. We track total clicks, geographic location (country), browser type, operating system, and referring websites to help you understand your audience."></i>
+                                               title="{% if current_user.is_authenticated %}Enable this to collect anonymized data on link performance. Since you are logged in, these statistics will be PRIVATE and accessible only to you via your dashboard.{% else %}Enable this to collect anonymized data on link performance. Note: Since you are not logged in, these statistics will be PUBLIC and anyone with the statistics link will be able to view them.{% endif %} We track total clicks, geographic location (country), browser type, operating system, and referring websites."></i>
                                         </div>
                                     </div>
                                 </div>
