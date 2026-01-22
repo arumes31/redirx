@@ -118,22 +118,24 @@ def create_app(config_class=Config):
         try:
             inspector = inspect(db.engine)
             columns = [c['name'] for c in inspector.get_columns('urls')]
+            app.logger.info(f"Checking schema for 'urls' table. Current columns: {columns}")
             
             with db.engine.connect() as conn:
-                if 'ios_target_url' not in columns:
-                    conn.execute(text("ALTER TABLE urls ADD COLUMN ios_target_url TEXT;"))
-                    conn.commit()
-                    app.logger.info("Migration: Added ios_target_url column.")
+                migrations = [
+                    ('ios_target_url', "ALTER TABLE urls ADD COLUMN ios_target_url TEXT;"),
+                    ('android_target_url', "ALTER TABLE urls ADD COLUMN android_target_url TEXT;"),
+                    ('is_enabled', "ALTER TABLE urls ADD COLUMN is_enabled BOOLEAN DEFAULT TRUE;"),
+                    ('last_accessed_at', "ALTER TABLE urls ADD COLUMN last_accessed_at TIMESTAMP;"),
+                    ('start_at', "ALTER TABLE urls ADD COLUMN start_at TIMESTAMP;"),
+                    ('end_at', "ALTER TABLE urls ADD COLUMN end_at TIMESTAMP;")
+                ]
                 
-                if 'android_target_url' not in columns:
-                    conn.execute(text("ALTER TABLE urls ADD COLUMN android_target_url TEXT;"))
-                    conn.commit()
-                    app.logger.info("Migration: Added android_target_url column.")
-                    
-                if 'is_enabled' not in columns:
-                    conn.execute(text("ALTER TABLE urls ADD COLUMN is_enabled BOOLEAN DEFAULT TRUE;"))
-                    conn.commit()
-                    app.logger.info("Migration: Added is_enabled column.")
+                for col_name, sql in migrations:
+                    if col_name not in columns:
+                        app.logger.info(f"Migration: Adding {col_name} column...")
+                        conn.execute(text(sql))
+                        conn.commit()
+                        app.logger.info(f"Migration: Successfully added {col_name}.")
                     
         except Exception as e:
             app.logger.error(f"Migration check failed: {e}")
