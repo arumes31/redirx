@@ -2,8 +2,6 @@ name: Cleanup Old Package Versions
 
 on:
   workflow_dispatch: # Allow manual triggering
-  schedule:
-    - cron: '0 0 * * 0' # Run weekly on Sundays at midnight
 
 jobs:
   delete-versions:
