@@ -183,9 +183,19 @@ def redirect_to_url(short_code):
         # Note: We already parsed UA above, reuse it
         client_ip = get_client_ip(request)
         
+        # Mask IP for privacy (e.g. 1.2.3.4 -> 1.2.x.x)
+        masked_ip = client_ip
+        parts = client_ip.split('.')
+        if len(parts) == 4:
+            masked_ip = f"{parts[0]}.{parts[1]}.x.x"
+        else: # IPv6 support
+            v6_parts = client_ip.split(':')
+            if len(v6_parts) >= 2:
+                masked_ip = f"{v6_parts[0]}:{v6_parts[1]}:x:x"
+
         new_click = Click(
             url_id=url_entry.id,
-            ip_address=client_ip,
+            ip_address=masked_ip,
             country=get_geo_info(client_ip, request),
             browser=user_agent.browser.family,
             platform=user_agent.os.family,
