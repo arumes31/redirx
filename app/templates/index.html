@@ -84,6 +84,16 @@
                                         {{ form.rotate_targets(class="form-control", placeholder="https://alt1.com, https://alt2.com") }}
                                     </div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-md-6 form-section">
+                                        {{ form.ios_target_url.label(class="form-label") }} <i class="fab fa-apple text-muted"></i>
+                                        {{ form.ios_target_url(class="form-control", placeholder="https://apps.apple.com/...") }}
+                                    </div>
+                                    <div class="col-md-6 form-section">
+                                        {{ form.android_target_url.label(class="form-label") }} <i class="fab fa-android text-muted"></i>
+                                        {{ form.android_target_url(class="form-control", placeholder="https://play.google.com/...") }}
+                                    </div>
+                                </div>
                                 <div class="row form-section">
                                     <div class="col-md-12">
                                         {{ form.password.label(class="form-label") }}

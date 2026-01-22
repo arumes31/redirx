@@ -10,6 +10,8 @@ class ShortenURLForm(FlaskForm):
     custom_code = StringField('Custom Code', validators=[Optional(), Length(min=3, max=20)])
     code_length = IntegerField('Auto-gen Length', default=6, validators=[Optional()])
     rotate_targets = StringField('Rotate Targets', validators=[Optional()], description="Comma-separated URLs")
+    ios_target_url = StringField('iOS Target URL', validators=[Optional(), URL()], description="Optional redirect for iOS devices")
+    android_target_url = StringField('Android Target URL', validators=[Optional(), URL()], description="Optional redirect for Android devices")
     password = PasswordField('Password', validators=[Optional()])
     
     # Expiry
@@ -49,6 +51,8 @@ class LinkPasswordForm(FlaskForm): # Renamed from original LoginForm to avoid co
 
 class EditURLForm(FlaskForm):
     long_url = StringField('Destination URL', validators=[DataRequired(), URL()])
+    ios_target_url = StringField('iOS Target URL', validators=[Optional(), URL()])
+    android_target_url = StringField('Android Target URL', validators=[Optional(), URL()])
     expiry_hours = IntegerField('Expiry (Hours) from now', validators=[Optional()])
     preview_mode = BooleanField('Preview Mode')
     stats_enabled = BooleanField('Enable Statistics')

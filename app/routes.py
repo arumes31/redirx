@@ -81,6 +81,8 @@ def index():
             short_code=short_code,
             long_url=long_url,
             rotate_targets=rotate_list,
+            ios_target_url=form.ios_target_url.data,
+            android_target_url=form.android_target_url.data,
             password_hash=password_hash,
             preview_mode=form.preview_mode.data,
             stats_enabled=form.stats_enabled.data,
@@ -191,7 +193,26 @@ def redirect_to_url(short_code):
              
     # Select destination
     target_url = url_entry.long_url
-    if url_entry.rotate_targets:
+    
+    # Device Targeting (overrides main URL, but rotate logic is complex with this - let's keep it simple: Device > Rotate > Main)
+    # However, user might want to rotate AND target.
+    # Logic: 
+    # 1. Check Device specific URL
+    # 2. If no device match or no device URL, check Rotate
+    # 3. Else Main
+    
+    ua_string = request.headers.get('User-Agent')
+    user_agent = parse(ua_string)
+    
+    device_match = False
+    if url_entry.ios_target_url and (user_agent.os.family == 'iOS'):
+        target_url = url_entry.ios_target_url
+        device_match = True
+    elif url_entry.android_target_url and (user_agent.os.family == 'Android'):
+        target_url = url_entry.android_target_url
+        device_match = True
+
+    if not device_match and url_entry.rotate_targets:
         alt = select_rotate_target(url_entry.rotate_targets)
         if alt:
             target_url = alt
@@ -205,8 +226,7 @@ def redirect_to_url(short_code):
         url_entry.clicks_count += 1
         
         # Record detailed click
-        ua_string = request.headers.get('User-Agent')
-        user_agent = parse(ua_string)
+        # Note: We already parsed UA above, reuse it
         client_ip = get_client_ip(request)
         
         new_click = Click(
@@ -390,6 +410,8 @@ def edit_url(short_code):
     
     if form.validate_on_submit():
         url_entry.long_url = form.long_url.data
+        url_entry.ios_target_url = form.ios_target_url.data
+        url_entry.android_target_url = form.android_target_url.data
         url_entry.preview_mode = form.preview_mode.data
         url_entry.stats_enabled = form.stats_enabled.data
         

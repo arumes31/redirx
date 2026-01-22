@@ -80,9 +80,22 @@ def create_app(config_class=Config):
     app.register_blueprint(api_blueprint)
 
     from app.utils import update_phishing_list, cleanup_phishing_urls
+    from sqlalchemy import text
 
     with app.app_context():
         db.create_all()
+        
+        # Auto-migration for device targeting columns
+        try:
+            with db.engine.connect() as conn:
+                conn.execute(text("ALTER TABLE urls ADD COLUMN ios_target_url TEXT;"))
+                conn.execute(text("ALTER TABLE urls ADD COLUMN android_target_url TEXT;"))
+                conn.commit()
+                app.logger.info("Added device targeting columns to URL table.")
+        except Exception:
+            # Columns likely exist
+            pass
+            
         update_phishing_list()
         cleanup_phishing_urls()
 
