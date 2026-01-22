@@ -12,6 +12,16 @@
                     {{ form.long_url.label(class="form-label") }}
                     {{ form.long_url(class="form-control") }}
                 </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form.ios_target_url.label(class="form-label") }} <i class="fab fa-apple text-muted"></i>
+                        {{ form.ios_target_url(class="form-control", placeholder="Optional iOS redirect") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.android_target_url.label(class="form-label") }} <i class="fab fa-android text-muted"></i>
+                        {{ form.android_target_url(class="form-control", placeholder="Optional Android redirect") }}
+                    </div>
+                </div>
                 <div class="mb-3">
                     {{ form.expiry_hours.label(class="form-label") }}
                     <div class="input-group">

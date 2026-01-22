@@ -25,6 +25,8 @@ class URL(db.Model):
     short_code = db.Column(db.String(20), unique=True, nullable=False, index=True)
     long_url = db.Column(db.Text, nullable=False)
     _rotate_targets = db.Column('rotate_targets', db.Text, nullable=True) # Stored as JSON string
+    ios_target_url = db.Column(db.Text, nullable=True)
+    android_target_url = db.Column(db.Text, nullable=True)
     password_hash = db.Column(db.String(255), nullable=True)
     preview_mode = db.Column(db.Boolean, default=True)
     stats_enabled = db.Column(db.Boolean, default=True)

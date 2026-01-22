@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from PIL import Image
 from user_agents import parse
 from urllib.parse import urlparse
+from sqlalchemy import func
 
 from app.models import db, URL, User, Click
 from app.forms import ShortenURLForm, BulkUploadForm, LoginForm, RegisterForm, LinkPasswordForm, EditURLForm
@@ -80,6 +81,8 @@ def index():
             short_code=short_code,
             long_url=long_url,
             rotate_targets=rotate_list,
+            ios_target_url=form.ios_target_url.data,
+            android_target_url=form.android_target_url.data,
             password_hash=password_hash,
             preview_mode=form.preview_mode.data,
             stats_enabled=form.stats_enabled.data,
@@ -190,7 +193,26 @@ def redirect_to_url(short_code):
              
     # Select destination
     target_url = url_entry.long_url
-    if url_entry.rotate_targets:
+    
+    # Device Targeting (overrides main URL, but rotate logic is complex with this - let's keep it simple: Device > Rotate > Main)
+    # However, user might want to rotate AND target.
+    # Logic: 
+    # 1. Check Device specific URL
+    # 2. If no device match or no device URL, check Rotate
+    # 3. Else Main
+    
+    ua_string = request.headers.get('User-Agent')
+    user_agent = parse(ua_string)
+    
+    device_match = False
+    if url_entry.ios_target_url and (user_agent.os.family == 'iOS'):
+        target_url = url_entry.ios_target_url
+        device_match = True
+    elif url_entry.android_target_url and (user_agent.os.family == 'Android'):
+        target_url = url_entry.android_target_url
+        device_match = True
+
+    if not device_match and url_entry.rotate_targets:
         alt = select_rotate_target(url_entry.rotate_targets)
         if alt:
             target_url = alt
@@ -204,8 +226,7 @@ def redirect_to_url(short_code):
         url_entry.clicks_count += 1
         
         # Record detailed click
-        ua_string = request.headers.get('User-Agent')
-        user_agent = parse(ua_string)
+        # Note: We already parsed UA above, reuse it
         client_ip = get_client_ip(request)
         
         new_click = Click(
@@ -281,22 +302,37 @@ def logout():
 @main.route('/dashboard')
 @login_required
 def dashboard():
-    urls = URL.query.filter_by(user_id=current_user.id).order_by(URL.created_at.desc()).all()
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
     
-    # Calculate stats
-    total_links = len(urls)
-    total_clicks = sum(u.clicks_count for u in urls)
-    active_links = sum(1 for u in urls if u.is_active())
-    top_performer = max(urls, key=lambda u: u.clicks_count) if urls else None
+    # Efficient stats via SQL aggregations
+    stats_query = db.session.query(
+        func.count(URL.id).label('total_links'),
+        func.sum(URL.clicks_count).label('total_clicks')
+    ).filter(URL.user_id == current_user.id).first()
+    
+    active_links = URL.query.filter_by(user_id=current_user.id, is_enabled=True).count()
+    
+    # Pagination
+    pagination = URL.query.filter_by(user_id=current_user.id)\
+        .order_by(URL.created_at.desc())\
+        .paginate(page=page, per_page=per_page, error_out=False)
+        
+    urls = pagination.items
+    
+    # Top performer (separate query, efficient)
+    top_performer = URL.query.filter_by(user_id=current_user.id)\
+        .order_by(URL.clicks_count.desc())\
+        .first()
     
     stats = {
-        'total_links': total_links,
-        'total_clicks': total_clicks,
+        'total_links': stats_query.total_links or 0,
+        'total_clicks': stats_query.total_clicks or 0,
         'active_links': active_links,
         'top_performer': top_performer
     }
     
-    return render_template('dashboard.html', urls=urls, stats=stats)
+    return render_template('dashboard.html', urls=urls, stats=stats, pagination=pagination)
 
 @main.route('/regenerate-api-key', methods=['POST'])
 @login_required
@@ -374,6 +410,8 @@ def edit_url(short_code):
     
     if form.validate_on_submit():
         url_entry.long_url = form.long_url.data
+        url_entry.ios_target_url = form.ios_target_url.data
+        url_entry.android_target_url = form.android_target_url.data
         url_entry.preview_mode = form.preview_mode.data
         url_entry.stats_enabled = form.stats_enabled.data
         

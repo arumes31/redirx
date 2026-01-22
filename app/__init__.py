@@ -65,6 +65,14 @@ def create_app(config_class=Config):
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+    @app.after_request
+    def set_security_headers(response):
+        response.headers['Content-Security-Policy'] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com data:;"
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        return response
+
     from app.routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
@@ -72,9 +80,22 @@ def create_app(config_class=Config):
     app.register_blueprint(api_blueprint)
 
     from app.utils import update_phishing_list, cleanup_phishing_urls
+    from sqlalchemy import text
 
     with app.app_context():
         db.create_all()
+        
+        # Auto-migration for device targeting columns
+        try:
+            with db.engine.connect() as conn:
+                conn.execute(text("ALTER TABLE urls ADD COLUMN ios_target_url TEXT;"))
+                conn.execute(text("ALTER TABLE urls ADD COLUMN android_target_url TEXT;"))
+                conn.commit()
+                app.logger.info("Added device targeting columns to URL table.")
+        except Exception:
+            # Columns likely exist
+            pass
+            
         update_phishing_list()
         cleanup_phishing_urls()
 
