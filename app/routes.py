@@ -71,8 +71,14 @@ def index():
             end_at = datetime.datetime.combine(form.end_date.data, form.end_time.data)
             
         expires_at = None
-        if form.expiry_hours.data and form.expiry_hours.data != 0:
-             expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=form.expiry_hours.data)
+        if form.expiry_hours.data is not None:
+            if form.expiry_hours.data == 0:
+                if not current_user.is_authenticated:
+                    flash("Please log in to create permanent links (Expiry: Never).", 'warning')
+                    return render_template('index.html', form=form)
+                expires_at = None
+            else:
+                expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=form.expiry_hours.data)
 
         # Create Record
         new_url = URL(
