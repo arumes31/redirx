@@ -17,11 +17,11 @@ def get_user_from_api_key():
 @api.route('/shorten', methods=['POST'])
 @limiter.limit("60 per minute") # Higher limit for API
 def shorten():
-    # Authenticate User
+    # Authenticate User - Mandatory
     user = get_user_from_api_key()
     
-    if current_app.config.get('DISABLE_ANONYMOUS_CREATE') and not user:
-        return jsonify({'error': 'Authentication required to shorten URLs'}), 401
+    if not user:
+        return jsonify({'error': 'Valid API Key required. Access denied.'}), 401
 
     data = request.get_json()
     if not data or 'long_url' not in data:
@@ -116,6 +116,11 @@ def shorten():
 
 @api.route('/<short_code>', methods=['GET'])
 def get_url_info(short_code):
+    # Authenticate User - Mandatory
+    user = get_user_from_api_key()
+    if not user:
+        return jsonify({'error': 'Valid API Key required. Access denied.'}), 401
+
     url_entry = URL.query.filter_by(short_code=short_code.upper()).first()
     if not url_entry:
         return jsonify({'error': 'URL not found'}), 404

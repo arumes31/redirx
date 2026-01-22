@@ -21,6 +21,7 @@ main = Blueprint('main', __name__)
 
 @main.route('/', methods=['GET', 'POST'])
 @limiter.limit(lambda: current_app.config.get('RATELIMIT_CREATE', '10 per minute'), methods=['POST'])
+@limiter.limit(lambda: current_app.config.get('RATELIMIT_DEFAULT', '200 per day'), methods=['GET'])
 def index():
     form = ShortenURLForm()
     
@@ -71,8 +72,19 @@ def index():
             end_at = datetime.datetime.combine(form.end_date.data, form.end_time.data)
             
         expires_at = None
-        if form.expiry_hours.data and form.expiry_hours.data != 0:
-             expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=form.expiry_hours.data)
+        if form.expiry_hours.data is not None:
+            if form.expiry_hours.data == 0 or form.expiry_hours.data > 8760:
+                if not current_user.is_authenticated:
+                    msg = "Please log in to create links longer than 1 year or permanent links."
+                    flash(msg, 'warning')
+                    return render_template('index.html', form=form)
+                
+                if form.expiry_hours.data == 0:
+                    expires_at = None
+                else:
+                    expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=form.expiry_hours.data)
+            else:
+                expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=form.expiry_hours.data)
 
         # Create Record
         new_url = URL(
@@ -117,6 +129,7 @@ def index():
                            short_url=short_url, qr_data=qr_data, stats_url=stats_url)
 
 @main.route('/<short_code>')
+@limiter.limit(lambda: current_app.config.get('RATELIMIT_REDIRECT', '100 per minute'))
 def redirect_to_url(short_code):
     url_entry = URL.query.filter_by(short_code=short_code).first()
     

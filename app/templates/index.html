@@ -69,7 +69,17 @@
                                         {{ form.expiry_hours(class="form-control", id="expiry_input", placeholder="24") }}
                                         <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('expiry_input').value=0">Never</button>
                                     </div>
-                                    <div class="form-text text-light opacity-50 small">Set to 0 to never expire.</div>
+                                    {% if form.expiry_hours.errors %}
+                                        <div class="text-danger small">{{ form.expiry_hours.errors[0] }}</div>
+                                    {% endif %}
+                                    <div class="form-text text-light opacity-50 small">
+                                        Max: 100 years. 
+                                        {% if not current_user.is_authenticated %}
+                                            <span class="text-info">Login required for > 1 year or "Never".</span>
+                                        {% else %}
+                                            Set to 0 for "Never".
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                             
@@ -167,6 +177,31 @@
                             </div>
                         {% endif %}
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEO Feature Section -->
+        <div class="row mt-5 text-center g-4">
+            <div class="col-md-4">
+                <div class="p-3">
+                    <i class="fas fa-link text-info fa-2x mb-3"></i>
+                    <h3 class="h5 text-light">URL Shortener</h3>
+                    <p class="text-muted small">Create branded, short links with custom aliases and optional password protection for total control over your traffic.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3">
+                    <i class="fas fa-qrcode text-success fa-2x mb-3"></i>
+                    <h3 class="h5 text-light">Custom QR Code Generator</h3>
+                    <p class="text-muted small">Generate unique QR codes for every link. Customize colors and add your own logo to match your brand identity.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3">
+                    <i class="fas fa-chart-line text-primary fa-2x mb-3"></i>
+                    <h3 class="h5 text-light">Advanced Link Analytics</h3>
+                    <p class="text-muted small">Track real-time click data, geographic locations, and device types to understand how your audience interacts with your content.</p>
                 </div>
             </div>
         </div>
