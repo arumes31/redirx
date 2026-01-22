@@ -26,6 +26,7 @@ def get_actual_ip():
 # Rate limiting configuration from env
 limit_default = os.environ.get('RATELIMIT_DEFAULT', "200 per day;50 per hour")
 limit_create = os.environ.get('RATELIMIT_CREATE', "10 per minute")
+limit_redirect = os.environ.get('RATELIMIT_REDIRECT', "100 per minute")
 storage_url = os.environ.get('RATELIMIT_STORAGE_URL', 'memory://')
 
 limiter = Limiter(

@@ -21,6 +21,7 @@ main = Blueprint('main', __name__)
 
 @main.route('/', methods=['GET', 'POST'])
 @limiter.limit(lambda: current_app.config.get('RATELIMIT_CREATE', '10 per minute'), methods=['POST'])
+@limiter.limit(lambda: current_app.config.get('RATELIMIT_DEFAULT', '200 per day'), methods=['GET'])
 def index():
     form = ShortenURLForm()
     
@@ -128,6 +129,7 @@ def index():
                            short_url=short_url, qr_data=qr_data, stats_url=stats_url)
 
 @main.route('/<short_code>')
+@limiter.limit(lambda: current_app.config.get('RATELIMIT_REDIRECT', '100 per minute'))
 def redirect_to_url(short_code):
     url_entry = URL.query.filter_by(short_code=short_code).first()
     
