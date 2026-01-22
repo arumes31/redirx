@@ -542,5 +542,6 @@ def sitemap():
     return render_template('sitemap.xml'), 200, {'Content-Type': 'application/xml'}
 
 @main.route('/api-docs')
+@login_required
 def api_docs():
     return render_template('api_docs.html')
