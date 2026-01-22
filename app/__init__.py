@@ -32,6 +32,7 @@ limit_default = os.environ.get('RATELIMIT_DEFAULT', "200 per day;50 per hour")
 limit_create = os.environ.get('RATELIMIT_CREATE', "10 per minute")
 limit_redirect = os.environ.get('RATELIMIT_REDIRECT', "100 per minute")
 limit_health = os.environ.get('RATELIMIT_HEALTH', "10 per minute")
+limit_metrics = os.environ.get('RATELIMIT_METRICS', "10 per minute")
 storage_url = os.environ.get('RATELIMIT_STORAGE_URL', 'memory://')
 
 limiter = Limiter(
@@ -79,10 +80,9 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     limiter.init_app(app)
     metrics.init_app(app)
-    csrf.init_app(app)
 
     @app.route('/metrics')
-    @limiter.limit("10 per minute") # Strict limit for metrics to prevent abuse
+    @limiter.limit(lambda: app.config.get('RATELIMIT_METRICS', '10 per minute')) # Configurable limit
     def custom_metrics():
         return metrics.export()
 

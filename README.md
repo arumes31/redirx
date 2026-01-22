@@ -54,6 +54,7 @@ docker-compose up -d
 | `RATELIMIT_CREATE` | `10 per minute` | Rate limit for creating new links. |
 | `RATELIMIT_REDIRECT` | `100 per minute` | Rate limit for link redirections. |
 | `RATELIMIT_HEALTH` | `10 per minute` | Rate limit for health check endpoint. |
+| `RATELIMIT_METRICS` | `10 per minute` | Rate limit for Prometheus metrics endpoint. |
 
 1. Install dependencies:
    ```bash
