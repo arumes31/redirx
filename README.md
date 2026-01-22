@@ -16,9 +16,10 @@ Redrx is a modern, feature-rich URL shortener built with Python (Flask), Postgre
 
 ## 🛠 Tech Stack
 
-- **Backend:** Flask, Flask-SQLAlchemy (ORM), Flask-WTF (Forms)
-- **Database:** PostgreSQL (default in Docker), SQLite (fallback)
+- **Backend:** Python (Flask), Gunicorn (WSGI Server)
+- **Database:** PostgreSQL (default), Redis (Rate limiting/Caching), SQLite (fallback)
 - **Geo-Location:** MaxMind GeoLite2 (Local mmdb with auto-updater)
+- **Monitoring:** Prometheus Metrics (via `/metrics`)
 - **Frontend:** HTML5, CSS3 (Bootstrap 5), JavaScript (Canvas API for animations)
 - **Deployment:** Docker, GHCR, GitHub Actions
 
@@ -63,7 +64,11 @@ docker-compose up -d
 2. Configure environment variables (see `example.env`).
 3. Run the app:
    ```bash
+   # Development
    python run.py
+
+   # Production (WSGI)
+   gunicorn -w 4 -b 0.0.0.0:5000 "run:app"
    ```
 
 ## 🔌 API Documentation
