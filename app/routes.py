@@ -6,12 +6,17 @@ import uuid
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, send_file, current_app, session, jsonify, send_from_directory
 from flask_login import login_user, logout_user, current_user, login_required
 from flask_limiter import Limiter
-from app import limiter # Import the instance
+from app import limiter, metrics # Import metrics
 from werkzeug.security import generate_password_hash, check_password_hash
 from PIL import Image
 from user_agents import parse
 from urllib.parse import urlparse
 from sqlalchemy import func
+from prometheus_client import Counter
+
+# Custom Metrics
+shortened_links_total = Counter('redrx_shortened_links_total', 'Total number of shortened links created')
+redirections_total = Counter('redrx_redirections_total', 'Total number of link redirections')
 
 from app.models import db, URL, User, Click
 from app.forms import ShortenURLForm, LoginForm, RegisterForm, LinkPasswordForm, EditURLForm
@@ -104,6 +109,9 @@ def index():
         db.session.add(new_url)
         db.session.commit()
         
+        # Increment Prometheus Counter
+        shortened_links_total.inc()
+        
         # Generate QR
         logo_img = None
         if form.logo_file.data:
@@ -174,6 +182,9 @@ def redirect_to_url(short_code):
     # Update last accessed
     url_entry.last_accessed_at = datetime.datetime.now(datetime.timezone.utc)
     db.session.commit()
+
+    # Increment Prometheus Counter
+    redirections_total.inc()
 
     # Stats
     if url_entry.stats_enabled:
