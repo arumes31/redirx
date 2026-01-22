@@ -2,12 +2,13 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash
 from app.models import db, URL, User
 from app.utils import generate_short_code, generate_qr, is_safe_url
-from app import limiter
+from app import limiter, csrf
 from app.routes import shortened_links_total # Import the custom counter
 import datetime
 import base64
 
 api = Blueprint('api', __name__, url_prefix='/api/v1')
+csrf.exempt(api)
 
 def get_user_from_api_key():
     api_key = request.headers.get('X-API-KEY')

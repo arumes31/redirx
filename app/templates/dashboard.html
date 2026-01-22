@@ -246,7 +246,12 @@ function copyLink(code, btn) {
 
 // Step 5: Toggle Status Logic
 function toggleStatus(code, checkbox) {
-    fetch(`/toggle-status/${code}`, { method: 'POST' })
+    fetch(`/toggle-status/${code}`, { 
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': "{{ csrf_token() }}"
+        }
+    })
     .then(r => r.json())
     .then(data => {
         const badge = checkbox.nextElementSibling;

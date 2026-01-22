@@ -2,6 +2,7 @@ from flask import Flask, request, redirect
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 from prometheus_flask_exporter import PrometheusMetrics
 from app.models import db, User
@@ -14,6 +15,8 @@ from urllib.parse import urlparse
 login_manager = LoginManager()
 login_manager.login_view = 'main.login'
 login_manager.login_message_category = 'info'
+
+csrf = CSRFProtect()
 
 def get_actual_ip():
     """Custom key function for Limiter that respects Cloudflare headers."""
@@ -28,6 +31,8 @@ def get_actual_ip():
 limit_default = os.environ.get('RATELIMIT_DEFAULT', "200 per day;50 per hour")
 limit_create = os.environ.get('RATELIMIT_CREATE', "10 per minute")
 limit_redirect = os.environ.get('RATELIMIT_REDIRECT', "100 per minute")
+limit_health = os.environ.get('RATELIMIT_HEALTH', "10 per minute")
+limit_metrics = os.environ.get('RATELIMIT_METRICS', "10 per minute")
 storage_url = os.environ.get('RATELIMIT_STORAGE_URL', 'memory://')
 
 limiter = Limiter(
@@ -77,7 +82,7 @@ def create_app(config_class=Config):
     metrics.init_app(app)
 
     @app.route('/metrics')
-    @limiter.limit("10 per minute") # Strict limit for metrics to prevent abuse
+    @limiter.limit(lambda: app.config.get('RATELIMIT_METRICS', '10 per minute')) # Configurable limit
     def custom_metrics():
         return metrics.export()
 
