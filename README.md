@@ -2,6 +2,8 @@
 
 Redrx is a modern, feature-rich URL shortener built with Python (Flask), PostgreSQL, and SQLAlchemy. It features a sleek dark UI with interactive background animations and robust security features.
 
+Test Page: https://redrx.eu
+
 ## ✨ Features
 
 - **Custom Short Codes:** Create memorable links.
